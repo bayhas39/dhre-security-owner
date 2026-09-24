@@ -3,7 +3,8 @@ import react from '@vitejs/plugin-react'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 
 export default defineConfig({
-  plugins: [react(), viteSingleFile()],
+  plugins: [react(), viteSingleFile({ removeViteModuleLoader: true })],
   base: './',
-  server: { port: 3000, open: false }
+  server: { port: 5175, open: false, host: true },
+  build: { target: 'es2015', cssCodeSplit: false, assetsInlineLimit: 100000000 }
 })

@@ -4,6 +4,50 @@ import { Search, MapPin, User, Building2, ClipboardCheck, Pencil, Save, X, Video
 import { Toaster, toast } from 'sonner'
 
 function genId(){ return Math.random().toString(36).slice(2,9) }
+function genDeterministicId(i){ return 'site-' + String(i).padStart(3,'0') + '-' + String(1000 + ((i*7331)%9000)) }
+
+function generate80Sites(){
+  const areas = ['Dubai Marina','Palm Jumeirah','Al Quoz','Downtown','Business Bay','JVC','Dubailand','Deira','Al Barsha','Sports City','JLT','Motor City','Arabian Ranches','Mirdif','AD - Corniche','Sharjah Ind','Ajman Free Zone','Ras Al Khaimah']
+  const blocks = ['Block A','Block B','Tower A','Tower B','Plot 12','Plot 7','Unit 4B','Warehouse 7','Level 24','Phase 2','Gate 3','Zone C','Building 5','Complex 8']
+  const types = ['Construction','Property','Safety','Industrial','Handover']
+  const statuses = ['Pending','In Progress','Completed','Issue Found']
+  const inspectors = ['Ahmed R.','Sarah M.','Khalid H.','Lisa K.','Omar S.','Priya N.','Youssef A.','Fatima K.','David L.','Noura H.']
+  const notesPool = ['Rebar inspection + formwork check','Pre-handover snagging','Fire safety passed','Floor tolerance failed','CCTV alignment pending','ANPR calibration done','Cable tray inspection','Waterproofing check','HVAC duct leak','Safety harness audit']
+  const items=[]
+  for(let i=1;i<=80;i++){
+    const area = areas[i % areas.length]
+    const block = blocks[i % blocks.length]
+    const type = types[i % types.length]
+    const status = statuses[(i*7) % statuses.length]
+    const inspector = inspectors[i % inspectors.length]
+    const totalCameras = 12 + (i*7 % 36)
+    const offlineCameras = i % 10 === 0 ? 6 + (i % 4) : i % 5 === 0 ? 3 + (i % 3) : (i % 7 === 0 ? 1 : 0)
+    const totalANPR = 2 + (i*3 % 8)
+    const offlineANPR = i % 12 === 0 ? 2 : i % 8 === 0 ? 1 : 0
+    const notWorkingANPR = i % 15 === 0 ? 2 : i % 9 === 0 ? 1 : 0
+    const notWorkingGate = i % 18 === 0 ? 2 : i % 11 === 0 ? 1 : 0
+    const notWorkingIntercom = i % 20 === 0 ? 2 : i % 13 === 0 ? 1 : 0
+    const pincode = String(1000 + ((i * 7331) % 9000)).padStart(4,'0')
+    const day = String(10 + (i % 18)).padStart(2,'0')
+    items.push({
+      id: genDeterministicId(i),
+      name: `Site ${String(i).padStart(2,'0')} — ${area} ${block}`,
+      location: `${area}, ${block}`,
+      type, status,
+      date: `2026-09-${day}`,
+      inspector,
+      notes: notesPool[i % notesPool.length],
+      totalCameras,
+      offlineCameras: Math.min(offlineCameras, totalCameras),
+      totalANPR,
+      offlineANPR: Math.min(offlineANPR, totalANPR),
+      notWorkingANPR: Math.min(notWorkingANPR, totalANPR),
+      notWorkingGate, notWorkingIntercom, pincode,
+    })
+  }
+  return items
+}
+const OWNER_SEED = generate80Sites()
 
 const SEED_ACCIDENTS = [
   { id: genId(), siteId: null, siteName: '', title: 'Forklift collision - Warehouse aisle 3', description: 'Forklift hit racking, no injury. Near-miss logged.', severity: 'High', status: 'Open', date: '2026-09-18', reportedBy: 'Safety Officer' },
@@ -17,9 +61,10 @@ export default function App(){
       const v80 = localStorage.getItem('site-inspection-sites-v80')
       if(v80){ const p=JSON.parse(v80); if(Array.isArray(p) && p.length===80) return p }
       const saved = localStorage.getItem('site-inspection-sites')
-      if(saved) return JSON.parse(saved)
+      if(saved){ const p2=JSON.parse(saved); if(Array.isArray(p2) && p2.length>0) return p2 }
     }catch{}
-    return []
+    // Chrome file:// has no shared localStorage with main dashboard — generate same 80 deterministically
+    return OWNER_SEED
   })
   const [incidents, setIncidents] = useState(()=>{
     try{ const s=localStorage.getItem('site-inspection-incidents'); return s?JSON.parse(s):[] }catch{return []}
@@ -208,11 +253,24 @@ export default function App(){
   }
   useEffect(()=>{
     if(!isLoggedIn && selectedId && !loginSiteId){
-      setLoginSiteId(selectedId)
-      const s = sites.find(x=>x.id===selectedId)
-      if(s) setLoginName(s.inspector)
+      let targetId = selectedId
+      let s = sites.find(x=>x.id===targetId)
       const urlPin = new URLSearchParams(window.location.search).get('pin')
+      // Chrome file:// IDs are random vs deterministic — fallback to pin
+      if(!s && urlPin){
+        s = sites.find(x=>x.pincode===urlPin)
+        if(s) targetId = s.id
+      }
+      if(!s){
+        // also try by site name from URL if pin didn't match
+        const urlSiteName = new URLSearchParams(window.location.search).get('siteName')
+        if(urlSiteName) s = sites.find(x=>x.name===decodeURIComponent(urlSiteName))
+        if(s) targetId = s.id
+      }
+      setLoginSiteId(targetId)
+      if(s) setLoginName(s.inspector)
       if(urlPin) setLoginPin(urlPin)
+      else if(s) setLoginPin(s.pincode || '')
     }
   }, [selectedId, isLoggedIn, sites])
   useEffect(()=>{
