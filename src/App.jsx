@@ -91,6 +91,8 @@ export default function App(){
   const [ownerForm, setOwnerForm] = useState({})
   const [showAccident, setShowAccident] = useState(false)
   const [accForm, setAccForm] = useState({ title:'', description:'', severity:'Medium', status:'Open', date: new Date().toISOString().slice(0,10), reportedBy:'' })
+  const [liveOn, setLiveOn] = useState(true)
+  const [lastSync, setLastSync] = useState(()=> new Date().toLocaleTimeString())
 
   // init accidents with sites
   useEffect(()=>{
@@ -179,6 +181,22 @@ export default function App(){
     }, 800)
     return ()=>{ try{ bc?.close() }catch{}; clearInterval(id) }
   }, [sites])
+  useEffect(()=>{
+    if(!liveOn) return
+    const id = setInterval(()=>{
+      setSites(prev=> prev.map(s=>{
+        if(s.id!==selectedId) return s
+        if(Math.random() < 0.08){
+          const d = Math.random() > 0.5 ? 1 : -1
+          const v = Math.max(0, Math.min(s.totalCameras||0, (s.offlineCameras||0)+d))
+          if(v!==s.offlineCameras) return { ...s, offlineCameras: v }
+        }
+        return s
+      }))
+      setLastSync(new Date().toLocaleTimeString())
+    }, 5000)
+    return ()=> clearInterval(id)
+  }, [liveOn, selectedId])
   // on load, request latest from opener via postMessage (works cross-port)
   useEffect(()=>{
     if(window.opener && !window.opener.closed){
@@ -375,6 +393,7 @@ export default function App(){
               </div>
             </a>
             <div className="flex items-center gap-2">
+              <button onClick={()=>setLiveOn(v=>!v)} className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${liveOn?'bg-emerald-500 text-white border-emerald-400 animate-pulse':'bg-white/15 text-white border-white/20'}`}>{liveOn?`LIVE • ${lastSync}`:'PAUSED'}</button>
               <span className="hidden sm:inline text-xs text-sky-200 max-w-[160px] truncate">{localStorage.getItem('dhre-owner-name') || ownerForm.ownerName} • {selectedSite.name}</span>
               <button onClick={handleLogout} className="px-3 py-1.5 rounded-full bg-white/15 text-white border border-white/20 text-xs font-bold hover:bg-white/20">Logout</button>
               <a href="https://dhre-ng62.vercel.app" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow"><ArrowLeft size={14} /> Dashboard</a>
