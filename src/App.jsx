@@ -286,7 +286,7 @@ export default function App(){
     }
   }, [sites])
 
-  if(!selectedSite) return <div className="p-8 text-center">Loading 80 sites from main dashboard — open <a href="https://bayhas39.github.io/dhre-security-dashboard" className="underline">DHRE Security Dashboard</a> first.</div>
+  if(!selectedSite) return <div className="p-8 text-center">Loading 80 sites from main dashboard — open <a href="https://dhre-ng62.vercel.app" className="underline">DHRE Security Dashboard</a> first.</div>
 
   // Login screen — 80 different pages, one per site
   if(!isLoggedIn){
@@ -325,7 +325,7 @@ export default function App(){
                 <div className="text-[11px] text-slate-500 mt-1">Get code from main website → <b>Sites → Pincode Access</b> for your site. Try <b>demo: 1234</b> works for any site.</div>
               </div>
               <button onClick={handleLogin} className="w-full py-3 rounded-full bg-slate-900 text-white font-bold hover:bg-black">Login with Pincode → My Site Dashboard</button>
-              <div className="text-xs text-center text-slate-500">Pincode is per-site • <a href="https://bayhas39.github.io/dhre-security-dashboard" className="underline font-bold">Back to main dashboard</a></div>
+              <div className="text-xs text-center text-slate-500">Pincode is per-site • <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to main dashboard</a></div>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-slate-50 border p-2" style={{ borderColor:'#eef2f7' }}><div className="text-[11px] font-bold uppercase text-slate-500">Sites</div><div className="font-extrabold">80</div></div>
@@ -345,7 +345,7 @@ export default function App(){
       <header className="sticky top-0 z-30 border-b overflow-hidden" style={{ borderColor: '#0f172a' }}>
         <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-sky-900">
           <div className="max-w-[1280px] mx-auto px-4 lg:px-6 h-[64px] flex items-center justify-between gap-4">
-            <a href="https://bayhas39.github.io/dhre-security-dashboard" className="flex items-center gap-3">
+            <a href="https://dhre-ng62.vercel.app" className="flex items-center gap-3">
               <div className="h-11 px-3 rounded-xl bg-white grid place-items-center overflow-hidden shrink-0 shadow-lg"><img src="./dhre-logo.svg" alt="DHRE" className="h-9 w-auto object-contain" onError={(e)=>{ e.currentTarget.src='./dhre-logo.jpg' }} /></div>
               <div>
                 <div className="font-extrabold tracking-tight leading-none text-[18px] text-white">DHRE — Owner Portal</div>
@@ -355,7 +355,7 @@ export default function App(){
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline text-xs text-sky-200 max-w-[160px] truncate">{localStorage.getItem('dhre-owner-name') || ownerForm.ownerName} • {selectedSite.name}</span>
               <button onClick={handleLogout} className="px-3 py-1.5 rounded-full bg-white/15 text-white border border-white/20 text-xs font-bold hover:bg-white/20">Logout</button>
-              <a href="https://bayhas39.github.io/dhre-security-dashboard" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow"><ArrowLeft size={14} /> Dashboard</a>
+              <a href="https://dhre-ng62.vercel.app" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow"><ArrowLeft size={14} /> Dashboard</a>
             </div>
           </div>
         </div>
@@ -503,7 +503,7 @@ export default function App(){
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">Owner Portal • Linked to main dashboard • Edits update main dashboard live (shared localStorage) • <a href="https://bayhas39.github.io/dhre-security-dashboard" className="underline font-bold">Back to DHRE Security Dashboard</a></p>
+        <p className="mt-6 text-center text-xs text-slate-400">Owner Portal • Linked to main dashboard • Edits update main dashboard live (shared localStorage) • <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to DHRE Security Dashboard</a></p>
       </main>
 
       {/* Add Accident Modal */}
