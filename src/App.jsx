@@ -134,9 +134,10 @@ export default function App(){
     }
   }, [selectedId, sites])
 
-  // sync to opener (main dashboard) so whatever you do here shows automatically in 1st website
+  // fully automatic sync — BroadcastChannel + postMessage + polling
   useEffect(()=>{
     if(sites.length) localStorage.setItem('site-inspection-sites-v80', JSON.stringify(sites))
+    try{ new BroadcastChannel('dhre-sync').postMessage({ type: 'sites-update', sites }) }catch{}
     if(sites.length && window.opener && !window.opener.closed){
       try{
         window.opener.localStorage.setItem('site-inspection-sites-v80', JSON.stringify(sites))
@@ -147,16 +148,36 @@ export default function App(){
   }, [sites])
   useEffect(()=>{
     localStorage.setItem('site-inspection-incidents', JSON.stringify(incidents))
+    try{ new BroadcastChannel('dhre-sync').postMessage({ type: 'incidents-update', incidents }) }catch{}
     if(window.opener && !window.opener.closed){
       try{ window.opener.localStorage.setItem('site-inspection-incidents', JSON.stringify(incidents)); window.opener.postMessage({ type: 'dhre-incidents-update', incidents }, '*') }catch{}
     }
   }, [incidents])
   useEffect(()=>{
     localStorage.setItem('dhre-accidents', JSON.stringify(accidents))
+    try{ new BroadcastChannel('dhre-sync').postMessage({ type: 'accidents-update', accidents }) }catch{}
     if(window.opener && !window.opener.closed){
       try{ window.opener.localStorage.setItem('dhre-accidents', JSON.stringify(accidents)); window.opener.postMessage({ type: 'dhre-accidents-update', accidents }, '*') }catch{}
     }
   }, [accidents])
+  useEffect(()=>{
+    let bc
+    try{ bc = new BroadcastChannel('dhre-sync'); bc.onmessage = (e)=>{
+      if(e.data?.type==='sites-update' && Array.isArray(e.data.sites)) setSites(e.data.sites)
+      if(e.data?.type==='incidents-update' && Array.isArray(e.data.incidents)) setIncidents(e.data.incidents)
+      if(e.data?.type==='accidents-update' && Array.isArray(e.data.accidents)) setAccidents(e.data.accidents)
+    }}catch{}
+    const id = setInterval(()=>{
+      try{
+        const raw = localStorage.getItem('site-inspection-sites-v80')
+        if(raw){
+          const p = JSON.parse(raw)
+          if(JSON.stringify(p) !== JSON.stringify(sites)) setSites(p)
+        }
+      }catch{}
+    }, 800)
+    return ()=>{ try{ bc?.close() }catch{}; clearInterval(id) }
+  }, [sites])
   // on load, request latest from opener via postMessage (works cross-port)
   useEffect(()=>{
     if(window.opener && !window.opener.closed){
