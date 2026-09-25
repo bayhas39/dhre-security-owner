@@ -474,10 +474,40 @@ export default function App(){
               <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Incidents</div><div className="text-xl font-extrabold">{siteIncidents.length}</div><div className="text-xs text-slate-500">{siteIncidents.filter(i=>i.status==='Open').length} open</div></div>
               <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Accidents</div><div className="text-xl font-extrabold">{siteAccidents.length}</div><div className="text-xs text-slate-500">{siteAccidents.filter(a=>a.status==='Open').length} open</div></div>
             </div>
+            {/* Charts for my site */}
+            <div className="grid lg:grid-cols-2 gap-3">
+              <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
+                <div className="text-xs font-bold tracking-widest uppercase text-slate-500">Cameras — My Site</div>
+                <div className="h-[160px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={[{ name:'Online', value: Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0)) }, { name:'Offline', value: selectedSite.offlineCameras||0 }].filter(d=>d.value>0)} cx="50%" cy="50%" innerRadius={36} outerRadius={56} dataKey="value">
+                        <Cell fill="#10b981" /><Cell fill="#ef4444" />
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-3 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online {Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />Offline {selectedSite.offlineCameras||0}</span></div>
+              </div>
+              <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
+                <div className="text-xs font-bold tracking-widest uppercase text-slate-500">ANPR — My Site</div>
+                <div className="h-[160px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={[{ name:'Online', value: Math.max(0,(selectedSite.totalANPR||0)-(selectedSite.offlineANPR||0)-(selectedSite.notWorkingANPR||0)) }, { name:'Offline', value: selectedSite.offlineANPR||0 }, { name:'Not Working', value: selectedSite.notWorkingANPR||0 }].filter(d=>d.value>0)} cx="50%" cy="50%" innerRadius={36} outerRadius={56} dataKey="value">
+                        <Cell fill="#10b981" /><Cell fill="#f59e0b" /><Cell fill="#7c3aed" />
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-2 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />Offline {selectedSite.offlineANPR||0}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-600" />Not Working {selectedSite.notWorkingANPR||0}</span></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Incidents / Accidents editable */}
         <div className="mt-6 grid lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
             <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
