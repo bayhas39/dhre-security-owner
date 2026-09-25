@@ -91,6 +91,8 @@ export default function App(){
   const [ownerForm, setOwnerForm] = useState({})
   const [showAccident, setShowAccident] = useState(false)
   const [accForm, setAccForm] = useState({ title:'', description:'', severity:'Medium', status:'Open', date: new Date().toISOString().slice(0,10), reportedBy:'' })
+  const [showSiteEdit, setShowSiteEdit] = useState(false)
+  const [siteEditForm, setSiteEditForm] = useState({})
   const [liveOn, setLiveOn] = useState(true)
   const [lastSync, setLastSync] = useState(()=> new Date().toLocaleTimeString())
 
@@ -260,6 +262,18 @@ export default function App(){
     setAccidents(prev=> prev.map(a=> a.id===id ? { ...a, status } : a))
     toast.success(`Accident → ${status}`)
   }
+  const openSiteEdit = ()=>{
+    if(!selectedSite) return
+    setSiteEditForm({ ...selectedSite })
+    setShowSiteEdit(true)
+  }
+  const saveSiteEdit = (e)=>{
+    e.preventDefault()
+    if(!siteEditForm.name?.trim() || !siteEditForm.location?.trim()){ toast.error('Name and location required'); return }
+    setSites(prev=> prev.map(s=> s.id===selectedId ? { ...s, ...siteEditForm } : s))
+    toast.success('Site updated — auto-synced to Main Dashboard')
+    setShowSiteEdit(false)
+  }
 
   const handleLogin = ()=>{
     if(!loginSiteId){ toast.error('Select your site'); return }
@@ -427,7 +441,7 @@ export default function App(){
                 </div>
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2"><Building2 size={14} className="text-slate-400" />{selectedSite.name}<span className="ml-auto text-xs px-2 py-1 rounded-full bg-slate-100 border" style={{ borderColor:'#e2e8f0' }}>{selectedSite.location}</span></div>
+                <div className="flex items-center gap-2"><Building2 size={14} className="text-slate-400" />{selectedSite.name}<span className="ml-auto text-xs px-2 py-1 rounded-full bg-slate-100 border" style={{ borderColor:'#e2e8f0' }}>{selectedSite.location}</span><button onClick={openSiteEdit} className="ml-2 px-2 py-1 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center gap-1"><Pencil size={11} /> Edit Site</button></div>
                 <div className="flex items-center gap-2"><Phone size={14} className="text-slate-400" />{editMode ? <input value={ownerForm.phone} onChange={e=>setOwnerForm({...ownerForm, phone:e.target.value})} className="flex-1 px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} /> : ownerForm.phone}</div>
                 <div className="flex items-center gap-2"><Mail size={14} className="text-slate-400" />{editMode ? <input value={ownerForm.email} onChange={e=>setOwnerForm({...ownerForm, email:e.target.value})} className="flex-1 px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} /> : <span className="truncate">{ownerForm.email}</span>}</div>
                 <div className="flex items-center gap-2"><Briefcase size={14} className="text-slate-400" />{editMode ? <input value={ownerForm.company} onChange={e=>setOwnerForm({...ownerForm, company:e.target.value})} className="flex-1 px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} /> : ownerForm.company}</div>
@@ -576,6 +590,48 @@ export default function App(){
 
         <p className="mt-6 text-center text-xs text-slate-400">Owner Portal • Linked to main dashboard • Edits update main dashboard live (shared localStorage) • <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to DHRE Security Dashboard</a></p>
       </main>
+
+      {/* Edit Site — fully updateable, syncs to main */}
+      <AnimatePresence>
+        {showSiteEdit && (
+          <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="fixed inset-0 z-40 grid place-items-center p-4">
+            <div onClick={()=>setShowSiteEdit(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+            <motion.form onSubmit={saveSiteEdit} initial={{ scale:0.96, y:8 }} animate={{ scale:1, y:0 }} exit={{ scale:0.96, y:8 }} className="relative w-full max-w-[640px] bg-white rounded-[24px] shadow-2xl border overflow-hidden max-h-[90vh] flex flex-col" style={{ borderColor:'#e2e8f0' }}>
+              <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor:'#e2e8f0' }}>
+                <div className="font-bold">Edit Site — {siteEditForm.name}</div>
+                <button type="button" onClick={()=>setShowSiteEdit(false)} className="w-8 h-8 grid place-items-center rounded-full hover:bg-slate-100"><X size={18} /></button>
+              </div>
+              <div className="p-6 space-y-3 overflow-auto">
+                <input value={siteEditForm.name||''} onChange={e=>setSiteEditForm({...siteEditForm, name:e.target.value})} placeholder="Site Name" className="w-full px-3 py-2 rounded-xl border bg-slate-50 font-bold" style={{ borderColor:'#e2e8f0' }} />
+                <input value={siteEditForm.location||''} onChange={e=>setSiteEditForm({...siteEditForm, location:e.target.value})} placeholder="Location" className="w-full px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} />
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={siteEditForm.type||''} onChange={e=>setSiteEditForm({...siteEditForm, type:e.target.value})} className="px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }}>{['Construction','Property','Safety','Industrial','Handover'].map(t=> <option key={t} value={t}>{t}</option>)}</select>
+                  <select value={siteEditForm.status||''} onChange={e=>setSiteEditForm({...siteEditForm, status:e.target.value})} className="px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }}>{['Pending','In Progress','Completed','Issue Found'].map(s=> <option key={s} value={s}>{s}</option>)}</select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="date" value={siteEditForm.date||''} onChange={e=>setSiteEditForm({...siteEditForm, date:e.target.value})} className="px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} />
+                  <input value={siteEditForm.inspector||''} onChange={e=>setSiteEditForm({...siteEditForm, inspector:e.target.value})} placeholder="Inspector / Owner" className="px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} />
+                </div>
+                <input value={siteEditForm.pincode||''} onChange={e=>setSiteEditForm({...siteEditForm, pincode:e.target.value.replace(/\D/g,'').slice(0,6)})} placeholder="Pincode" className="w-full px-3 py-2 rounded-xl border bg-amber-50 font-mono tracking-widest" style={{ borderColor:'#fde68a' }} />
+                <textarea value={siteEditForm.notes||''} onChange={e=>setSiteEditForm({...siteEditForm, notes:e.target.value})} rows={2} placeholder="Notes" className="w-full px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} />
+                <div className="grid grid-cols-3 gap-2">
+                  <div><label className="text-xs font-bold">Total Cam</label><input type="number" value={siteEditForm.totalCameras||0} onChange={e=>setSiteEditForm({...siteEditForm, totalCameras: Math.max(0, parseInt(e.target.value)||0)})} className="w-full px-2 py-2 rounded-xl border bg-white" style={{ borderColor:'#e2e8f0' }} /></div>
+                  <div><label className="text-xs font-bold">Offline CCTV</label><input type="number" value={siteEditForm.offlineCameras||0} onChange={e=>setSiteEditForm({...siteEditForm, offlineCameras: Math.max(0, parseInt(e.target.value)||0)})} className="w-full px-2 py-2 rounded-xl border bg-white" style={{ borderColor:'#fecaca' }} /></div>
+                  <div><label className="text-xs font-bold">Total ANPR</label><input type="number" value={siteEditForm.totalANPR||0} onChange={e=>setSiteEditForm({...siteEditForm, totalANPR: Math.max(0, parseInt(e.target.value)||0)})} className="w-full px-2 py-2 rounded-xl border bg-white" style={{ borderColor:'#e2e8f0' }} /></div>
+                  <div><label className="text-xs font-bold">Offline ANPR</label><input type="number" value={siteEditForm.offlineANPR||0} onChange={e=>setSiteEditForm({...siteEditForm, offlineANPR: Math.max(0, parseInt(e.target.value)||0)})} className="w-full px-2 py-2 rounded-xl border bg-white" style={{ borderColor:'#fde68a' }} /></div>
+                  <div><label className="text-xs font-bold">ACS</label><input type="number" value={siteEditForm.notWorkingANPR||0} onChange={e=>setSiteEditForm({...siteEditForm, notWorkingANPR: Math.max(0, parseInt(e.target.value)||0)})} className="w-full px-2 py-2 rounded-xl border bg-white" style={{ borderColor:'#ddd6fe' }} /></div>
+                  <div><label className="text-xs font-bold">Gate</label><input type="number" value={siteEditForm.notWorkingGate||0} onChange={e=>setSiteEditForm({...siteEditForm, notWorkingGate: Math.max(0, parseInt(e.target.value)||0)})} className="w-full px-2 py-2 rounded-xl border bg-white" style={{ borderColor:'#bae6fd' }} /></div>
+                </div>
+                <input type="number" value={siteEditForm.notWorkingIntercom||0} onChange={e=>setSiteEditForm({...siteEditForm, notWorkingIntercom: Math.max(0, parseInt(e.target.value)||0)})} placeholder="Intercom fails" className="w-full px-3 py-2 rounded-xl border bg-white" style={{ borderColor:'#e2e8f0' }} />
+              </div>
+              <div className="p-4 border-t bg-slate-50 flex gap-2 justify-end" style={{ borderColor:'#e2e8f0' }}>
+                <button type="button" onClick={()=>setShowSiteEdit(false)} className="px-4 py-2 rounded-full border bg-white font-bold" style={{ borderColor:'#e2e8f0' }}>Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold">Save — Auto-sync to Main</button>
+              </div>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Add Accident Modal */}
       <AnimatePresence>
