@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, MapPin, User, Building2, ClipboardCheck, Pencil, Save, X, Video, Camera, ScanSearch, WifiOff, AlertTriangle, FileText, ShieldCheck, HardHat, Home, Factory, ArrowLeft, Phone, Mail, Briefcase, Calendar, CheckCircle2, Plus, Trash2, Edit3 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { KEYS, publish, subscribe, readKey, ensureLegacyMirror } from './sync.js'
+import { SUPABASE_ENABLED, publishBoth, pullAll, subscribeRemote, primeRemote } from './remote.js'
+import { autoUpdateAll, summarizeByPeriod, generateNarrative, computeHealth } from './ai-engine.js'
 
 function genId(){ return Math.random().toString(36).slice(2,9) }
 function genDeterministicId(i){ return 'site-' + String(i).padStart(3,'0') + '-' + String(1000 + ((i*7331)%9000)) }
@@ -95,6 +98,8 @@ export default function App(){
   const [siteEditForm, setSiteEditForm] = useState({})
   const [liveOn, setLiveOn] = useState(true)
   const [lastSync, setLastSync] = useState(()=> new Date().toLocaleTimeString())
+  const [showAI, setShowAI] = useState(false)
+  const [aiSummary, setAiSummary] = useState('')
 
   // init accidents with sites
   useEffect(()=>{
@@ -139,50 +144,70 @@ export default function App(){
     }
   }, [selectedId, sites])
 
-  // fully automatic sync — BroadcastChannel + postMessage + polling
-  useEffect(()=>{
-    if(sites.length) localStorage.setItem('site-inspection-sites-v80', JSON.stringify(sites))
-    try{ new BroadcastChannel('dhre-sync').postMessage({ type: 'sites-update', sites }) }catch{}
-    if(sites.length && window.opener && !window.opener.closed){
-      try{
-        window.opener.localStorage.setItem('site-inspection-sites-v80', JSON.stringify(sites))
-        window.opener.localStorage.setItem('site-inspection-sites', JSON.stringify(sites))
-        window.opener.postMessage({ type: 'dhre-sites-update', sites }, '*')
-      }catch{}
+  // ---- SYNC: publish owner edits to BOTH transports ----
+  useEffect(()=>{ if(sites.length){ publishBoth('sites', sites, KEYS.sitesLegacy); ensureLegacyMirror(sites) } }, [sites])
+  useEffect(()=>{ publishBoth('incidents', incidents) }, [incidents])
+  useEffect(()=>{ publishBoth('accidents', accidents) }, [accidents])
+
+  // ---- SYNC: receive admin edits (other tab, same device) ----
+  useEffect(()=> subscribe([KEYS.sites, KEYS.incidents, KEYS.accidents], (key)=>{
+    if(!key || key===KEYS.sites || key==='*'){
+      const next = readKey(KEYS.sites, null)
+      if(Array.isArray(next)) setSites(next)
     }
-  }, [sites])
-  useEffect(()=>{
-    localStorage.setItem('site-inspection-incidents', JSON.stringify(incidents))
-    try{ new BroadcastChannel('dhre-sync').postMessage({ type: 'incidents-update', incidents }) }catch{}
-    if(window.opener && !window.opener.closed){
-      try{ window.opener.localStorage.setItem('site-inspection-incidents', JSON.stringify(incidents)); window.opener.postMessage({ type: 'dhre-incidents-update', incidents }, '*') }catch{}
+    if(!key || key===KEYS.incidents || key==='*'){
+      const next = readKey(KEYS.incidents, null)
+      if(Array.isArray(next)) setIncidents(next)
     }
-  }, [incidents])
-  useEffect(()=>{
-    localStorage.setItem('dhre-accidents', JSON.stringify(accidents))
-    try{ new BroadcastChannel('dhre-sync').postMessage({ type: 'accidents-update', accidents }) }catch{}
-    if(window.opener && !window.opener.closed){
-      try{ window.opener.localStorage.setItem('dhre-accidents', JSON.stringify(accidents)); window.opener.postMessage({ type: 'dhre-accidents-update', accidents }, '*') }catch{}
+    if(!key || key===KEYS.accidents || key==='*'){
+      const next = readKey(KEYS.accidents, null)
+      if(Array.isArray(next)) setAccidents(next)
     }
-  }, [accidents])
+    setLastSync(new Date().toLocaleTimeString())
+  }), [])
+
+  // ---- FULLY AUTOMATIC AI: updates all sites every 30s ----
   useEffect(()=>{
-    let bc
-    try{ bc = new BroadcastChannel('dhre-sync'); bc.onmessage = (e)=>{
-      if(e.data?.type==='sites-update' && Array.isArray(e.data.sites)) setSites(e.data.sites)
-      if(e.data?.type==='incidents-update' && Array.isArray(e.data.incidents)) setIncidents(e.data.incidents)
-      if(e.data?.type==='accidents-update' && Array.isArray(e.data.accidents)) setAccidents(e.data.accidents)
-    }}catch{}
-    const id = setInterval(()=>{
-      try{
-        const raw = localStorage.getItem('site-inspection-sites-v80')
-        if(raw){
-          const p = JSON.parse(raw)
-          if(JSON.stringify(p) !== JSON.stringify(sites)) setSites(p)
-        }
-      }catch{}
-    }, 800)
-    return ()=>{ try{ bc?.close() }catch{}; clearInterval(id) }
-  }, [sites])
+    const runAI = ()=>{
+      setSites(prev=>{
+        const updated = autoUpdateAll(prev, incidents, accidents)
+        return updated
+      })
+      setLastSync(new Date().toLocaleTimeString())
+    }
+    runAI()
+    const id = setInterval(runAI, 30000)
+    return ()=> clearInterval(id)
+  }, [incidents, accidents])
+
+  // ---- SYNC: Supabase (cross-device) ----
+  useEffect(()=>{ primeRemote() }, [])
+
+  useEffect(()=>{
+    if(!SUPABASE_ENABLED) return
+    let cancelled = false
+    pullAll().then((res)=>{
+      if(cancelled || !res) return
+      const { data } = res
+      if(Array.isArray(data.sites)) setSites(data.sites)
+      if(Array.isArray(data.incidents)) setIncidents(data.incidents)
+      if(Array.isArray(data.accidents)) setAccidents(data.accidents)
+      setLastSync(new Date().toLocaleTimeString())
+    })
+    return ()=>{ cancelled = true }
+  }, [])
+
+  useEffect(()=>{
+    if(!SUPABASE_ENABLED) return
+    return subscribeRemote((collection, payload)=>{
+      if(!payload) return
+      if(collection==='sites' && Array.isArray(payload)) setSites(payload)
+      if(collection==='incidents' && Array.isArray(payload)) setIncidents(payload)
+      if(collection==='accidents' && Array.isArray(payload)) setAccidents(payload)
+      setLastSync(new Date().toLocaleTimeString())
+    })
+  }, [])
+
   useEffect(()=>{
     if(!liveOn) return
     const id = setInterval(()=>{
@@ -215,8 +240,6 @@ export default function App(){
     }
     window.addEventListener('message', handler)
     return ()=> window.removeEventListener('message', handler)
-  }, [])
-    }
   }, [])
 
   const selectedSite = useMemo(()=> sites.find(s=>s.id===selectedId) || sites[0], [sites, selectedId])
@@ -273,6 +296,16 @@ export default function App(){
     setSites(prev=> prev.map(s=> s.id===selectedId ? { ...s, ...siteEditForm } : s))
     toast.success('Site updated — auto-synced to Main Dashboard')
     setShowSiteEdit(false)
+  }
+  const aiUpdateMain = ()=>{
+    if(!selectedSite) return
+    const total = (selectedSite.totalCameras||0) + (selectedSite.totalANPR||0)
+    const offline = (selectedSite.offlineCameras||0) + (selectedSite.offlineANPR||0) + (selectedSite.notWorkingANPR||0) + (selectedSite.notWorkingGate||0) + (selectedSite.notWorkingIntercom||0)
+    const health = total ? Math.max(0, 100 - Math.round((offline/total)*100)) : 100
+    const newStatus = offline===0 ? 'Completed' : offline>5 ? 'Issue Found' : 'In Progress'
+    const aiNote = `AI auto-update ${new Date().toLocaleString()}: Health ${health}% — ${offline} offline/not working — ${siteIncidents.length} incidents, ${siteAccidents.length} accidents — synced to Main Dashboard`
+    setSites(prev=> prev.map(s=> s.id===selectedId ? { ...s, status: newStatus, notes: aiNote } : s))
+    toast.success(`AI updated Main Dashboard — ${selectedSite.name}: ${health}% health, status → ${newStatus}`)
   }
 
   const handleLogin = ()=>{
@@ -407,6 +440,7 @@ export default function App(){
               </div>
             </a>
             <div className="flex items-center gap-2">
+              <button onClick={()=>{ setShowAI(v=>!v); if(!showAI){ const s = summarizeByPeriod(sites, incidents, accidents); setAiSummary(generateNarrative(sites, incidents, accidents)); } }} className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-violet-600 text-white text-xs font-bold hover:bg-violet-700"><ScanSearch size={14} /> AI Summary</button>
               <button onClick={()=>setLiveOn(v=>!v)} className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${liveOn?'bg-emerald-500 text-white border-emerald-400 animate-pulse':'bg-white/15 text-white border-white/20'}`}>{liveOn?`LIVE • ${lastSync}`:'PAUSED'}</button>
               <span className="hidden sm:inline text-xs text-sky-200 max-w-[160px] truncate">{localStorage.getItem('dhre-owner-name') || ownerForm.ownerName} • {selectedSite.name}</span>
               <button onClick={handleLogout} className="px-3 py-1.5 rounded-full bg-white/15 text-white border border-white/20 text-xs font-bold hover:bg-white/20">Logout</button>
@@ -629,6 +663,78 @@ export default function App(){
                 <button type="submit" className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold">Save — Auto-sync to Main</button>
               </div>
             </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Summary Panel */}
+      <AnimatePresence>
+        {showAI && (
+          <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="fixed inset-0 z-40 grid place-items-center p-4">
+            <div onClick={()=>setShowAI(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+            <motion.div initial={{ scale:0.96, y:8 }} animate={{ scale:1, y:0 }} exit={{ scale:0.96, y:8 }} className="relative w-full max-w-[720px] bg-white rounded-[24px] shadow-2xl border overflow-hidden max-h-[90vh] flex flex-col" style={{ borderColor:'#e2e8f0' }}>
+              <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor:'#e2e8f0' }}>
+                <div className="font-bold flex items-center gap-2"><ScanSearch size={18} className="text-violet-600" /> AI Site Summary</div>
+                <button onClick={()=>setShowAI(false)} className="w-8 h-8 grid place-items-center rounded-full hover:bg-slate-100"><X size={18} /></button>
+              </div>
+              <div className="p-6 overflow-auto">
+                <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-sm whitespace-pre-line font-mono">{aiSummary || 'Generating...'}</div>
+                <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {(()=>{
+                    const s = summarizeByPeriod(sites, incidents, accidents)
+                    return [
+                      { label:'Today', data:s.days.buckets[0], color:'text-emerald-600' },
+                      { label:'This Week', data:s.weeks.buckets[0], color:'text-sky-600' },
+                      { label:'This Month', data:s.months.buckets[0], color:'text-violet-600' },
+                      { label:'This Year', data:s.years.buckets[0], color:'text-amber-600' },
+                    ].map(p=>(
+                      <div key={p.label} className="border rounded-xl p-3" style={{ borderColor:'#e2e8f0' }}>
+                        <div className={`text-[11px] font-bold tracking-widest uppercase ${p.color}`}>{p.label}</div>
+                        <div className="mt-2 space-y-1 text-xs">
+                          <div className="flex justify-between"><span className="text-slate-500">Sites</span><span className="font-bold">{p.data.sites}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Health</span><span className="font-bold">{p.data.avgHealth}%</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Offline</span><span className="font-bold">{p.data.offlineCam + p.data.offlineANPR}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Incidents</span><span className="font-bold">{p.data.incidents}</span></div>
+                          <div className="flex justify-between"><span className="text-slate-500">Accidents</span><span className="font-bold">{p.data.accidents}</span></div>
+                        </div>
+                      </div>
+                    ))
+                  })()}
+                </div>
+                <div className="mt-4 grid lg:grid-cols-2 gap-3">
+                  <div className="border rounded-xl p-3" style={{ borderColor:'#e2e8f0' }}>
+                    <div className="text-xs font-bold tracking-widest uppercase text-slate-500 mb-2">Daily (last 30 days)</div>
+                    <div className="h-[120px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={[...summarizeByPeriod(sites, incidents, accidents).days.buckets].reverse()}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="label" tick={{ fontSize:9 }} interval={4} />
+                          <YAxis tick={{ fontSize:9 }} />
+                          <Tooltip />
+                          <Bar dataKey="sites" fill="#8b5cf6" radius={[2,2,0,0]} name="Sites" />
+                          <Bar dataKey="incidents" fill="#f59e0b" radius={[2,2,0,0]} name="Incidents" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="border rounded-xl p-3" style={{ borderColor:'#e2e8f0' }}>
+                    <div className="text-xs font-bold tracking-widest uppercase text-slate-500 mb-2">Monthly (last 12 months)</div>
+                    <div className="h-[120px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={[...summarizeByPeriod(sites, incidents, accidents).months.buckets].reverse()}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="label" tick={{ fontSize:9 }} />
+                          <YAxis tick={{ fontSize:9 }} />
+                          <Tooltip />
+                          <Bar dataKey="sites" fill="#0ea5e9" radius={[2,2,0,0]} name="Sites" />
+                          <Bar dataKey="accidents" fill="#ef4444" radius={[2,2,0,0]} name="Accidents" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
