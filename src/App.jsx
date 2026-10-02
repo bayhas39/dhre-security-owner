@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, MapPin, User, Building2, ClipboardCheck, Pencil, Save, X, Video, Camera, ScanSearch, WifiOff, AlertTriangle, FileText, ShieldCheck, HardHat, Home, Factory, ArrowLeft, Phone, Mail, Briefcase, Calendar, CheckCircle2, Plus, Trash2, Edit3 } from 'lucide-react'
+import { Search, MapPin, User, Building2, ClipboardCheck, Pencil, Save, X, Video, Camera, ScanSearch, WifiOff, AlertTriangle, FileText, ShieldCheck, HardHat, Home, Factory, ArrowLeft, Phone, Mail, Briefcase, Calendar, CheckCircle2, Plus, Trash2, Edit3, Copy, Key as KeyIcon } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { KEYS, publish, subscribe, readKey, ensureLegacyMirror } from './sync.js'
@@ -246,6 +246,16 @@ export default function App(){
   const siteIncidents = useMemo(()=> incidents.filter(i=> i.siteId===selectedId), [incidents, selectedId])
   const siteAccidents = useMemo(()=> accidents.filter(a=> a.siteId===selectedId), [accidents, selectedId])
   const aiPeriods = useMemo(()=> summarizeByPeriod(sites, incidents, accidents), [sites, incidents, accidents])
+  const problemTypes = useMemo(()=>{
+    const out=[]
+    if((selectedSite?.offlineCameras||0)>0) out.push('Offline CCTV')
+    if((selectedSite?.offlineANPR||0)>0) out.push('Offline ANPR')
+    if((selectedSite?.notWorkingANPR||0)>0) out.push('Not Working ACS')
+    if((selectedSite?.notWorkingGate||0)>0) out.push('Not Working Gate barrier')
+    if((selectedSite?.notWorkingIntercom||0)>0) out.push('Not Working Intercom')
+    if(siteIncidents.some(i=>i.status==='Open'||i.status==='In Review')||selectedSite?.status==='Issue Found') out.push('Incident Sites')
+    return out
+  }, [selectedSite, siteIncidents])
   const camerasPieData = useMemo(()=>[
     { name:'Online', value: Math.max(0,(selectedSite?.totalCameras||0)-(selectedSite?.offlineCameras||0)) },
     { name:'Offline', value: selectedSite?.offlineCameras||0 }
@@ -468,10 +478,142 @@ export default function App(){
       </header>
 
       <main className="max-w-[1280px] mx-auto px-4 lg:px-6 py-6">
-        {/* Owner Details + Site */}
-        <div className="grid lg:grid-cols-12 gap-4">
+        <div className="bg-white rounded-[24px] border overflow-hidden" style={{ borderColor:'#e2e8f0', boxShadow:'0 10px 30px rgba(15,23,42,0.06)' }}>
+          {/* Header */}
+          <div className="px-5 py-4 border-b flex items-center gap-3 flex-wrap" style={{ borderColor:'#eef2f7' }}>
+            <div className="w-10 h-10 rounded-xl bg-blue-500 text-white grid place-items-center shrink-0"><Building2 size={18} /></div>
+            <div className="min-w-0">
+              <h1 className="font-extrabold text-lg leading-tight truncate">{selectedSite.name}</h1>
+              <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <MapPin size={11} /> {selectedSite.location} <span>•</span> {selectedSite.type} <span>•</span>
+                <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full border ${selectedSite.status==='Completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':selectedSite.status==='Issue Found'?'bg-red-50 text-red-700 border-red-200':selectedSite.status==='In Progress'?'bg-sky-50 text-sky-700 border-sky-200':'bg-amber-50 text-amber-700 border-amber-200'}`}><span className={`w-1.5 h-1.5 rounded-full ${selectedSite.status==='Completed'?'bg-emerald-500':selectedSite.status==='Issue Found'?'bg-red-500':selectedSite.status==='In Progress'?'bg-sky-500':'bg-amber-500'}`} /> {selectedSite.status}</span>
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold"><KeyIcon size={12} /> {selectedSite.pincode} <button onClick={()=>{ navigator.clipboard?.writeText(selectedSite.pincode); toast.success('Pincode copied') }} className="opacity-70 hover:opacity-100"><Copy size={12} /></button></span>
+              <button onClick={openSiteEdit} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-white text-xs font-bold hover:bg-slate-50" style={{ borderColor:'#e2e8f0' }}><Pencil size={12} /> Edit</button>
+            </div>
+          </div>
+
+          {/* Stat cards */}
+          <div className="p-5 grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
+              <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total Cameras</div>
+              <div className="mt-1 text-2xl font-extrabold">{selectedSite.totalCameras||0}</div>
+              <div className="text-xs text-slate-500">{Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))} online • {selectedSite.offlineCameras||0} offline</div>
+            </div>
+            <div className="bg-red-50/40 rounded-xl border p-3" style={{ borderColor:'#fecaca' }}>
+              <div className="text-[11px] font-bold tracking-widest uppercase text-red-600">Offline CCTV</div>
+              <div className="mt-1 text-2xl font-extrabold text-red-600">{selectedSite.offlineCameras||0}</div>
+              <div className="text-xs text-slate-500">{selectedSite.totalCameras ? Math.round(((selectedSite.offlineCameras||0)/selectedSite.totalCameras)*100) : 0}% offline</div>
+            </div>
+            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
+              <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">ANPR</div>
+              <div className="mt-1 text-2xl font-extrabold">{selectedSite.totalANPR||0}</div>
+              <div className="text-xs text-slate-500">Offline {selectedSite.offlineANPR||0} • Not working {selectedSite.notWorkingANPR||0}</div>
+            </div>
+            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
+              <div className="text-[11px] font-bold tracking-widest uppercase text-amber-600">Problems</div>
+              <div className="mt-1 text-2xl font-extrabold">{problemTypes.length}</div>
+              <div className="text-xs text-slate-500 truncate">{problemTypes.slice(0,2).join(' • ') || 'None'}</div>
+            </div>
+            <div className="bg-amber-50/60 rounded-xl border p-3" style={{ borderColor:'#fde68a' }}>
+              <div className="text-[11px] font-bold tracking-widest uppercase text-amber-700 flex items-center justify-between">Pincode <KeyIcon size={12} /></div>
+              <div className="mt-1 text-2xl font-extrabold font-mono tracking-widest">{selectedSite.pincode}</div>
+              <div className="text-xs flex items-center gap-2 mt-0.5">
+                <button onClick={()=>{ navigator.clipboard?.writeText(window.location.href); toast.success('Link copied') }} className="underline font-bold text-amber-700">Copy link</button>
+              </div>
+              <button onClick={()=>{ updateSiteField('pincode', String(1000+Math.floor(Math.random()*9000))); toast.success('Pincode regenerated') }} className="mt-1 text-xs underline font-bold text-amber-700">Regenerate</button>
+            </div>
+          </div>
+
+          {/* Charts */}
+          <div className="px-5 pb-5 grid lg:grid-cols-2 gap-3">
+            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
+              <div className="text-xs font-bold tracking-widest uppercase text-slate-500">Cameras — This Site</div>
+              <div className="h-[150px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={camerasPieData} cx="50%" cy="50%" innerRadius={34} outerRadius={54} dataKey="value" isAnimationActive={false}>
+                      <Cell fill="#10b981" /><Cell fill="#ef4444" />
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center gap-3 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online {Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />Offline {selectedSite.offlineCameras||0}</span></div>
+            </div>
+            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
+              <div className="text-xs font-bold tracking-widest uppercase text-slate-500">ANPR — This Site</div>
+              <div className="h-[150px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={anprPieData} cx="50%" cy="50%" innerRadius={34} outerRadius={54} dataKey="value" isAnimationActive={false}>
+                      <Cell fill="#10b981" /><Cell fill="#f59e0b" /><Cell fill="#7c3aed" />
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center gap-2 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />Offline {selectedSite.offlineANPR||0}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-600" />Not Working {selectedSite.notWorkingANPR||0}</span></div>
+            </div>
+          </div>
+
+          {/* Issues */}
+          <div className="mx-5 mb-5 border rounded-2xl" style={{ borderColor:'#e2e8f0' }}>
+            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
+              <div className="font-bold text-sm flex items-center gap-2"><AlertTriangle size={14} className="text-amber-500" /> Issues for this site • {problemTypes.length} problems</div>
+              <span className="text-xs px-2 py-1 rounded-full bg-slate-100 border" style={{ borderColor:'#e2e8f0' }}>{siteIncidents.length} incidents • {siteAccidents.length} accidents</span>
+            </div>
+            <div className="px-4 py-3 flex gap-2 flex-wrap">
+              {problemTypes.length===0 ? <span className="text-xs text-slate-500">No open problems.</span> : problemTypes.map(p=>(
+                <span key={p} className="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">{p}</span>
+              ))}
+            </div>
+            <div className="px-4 pb-4 grid lg:grid-cols-2 gap-3">
+              <div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500 mb-2">Incidents ({siteIncidents.length})</div>
+                <div className="space-y-2">
+                  {siteIncidents.length===0 ? <div className="text-sm text-slate-500 bg-slate-50 rounded-xl border p-4 text-center" style={{ borderColor:'#eef2f7' }}>No incidents for this site.</div> : siteIncidents.map(inc=>(
+                    <div key={inc.id} className="border rounded-xl p-3 bg-slate-50" style={{ borderColor:'#eef2f7' }}>
+                      <div className="font-bold text-sm flex items-center justify-between">{inc.title}<button onClick={()=>{ setIncidents(prev=>prev.filter(x=>x.id!==inc.id)); toast.success('Incident deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
+                      <div className="text-xs text-slate-600 mt-1">{inc.description}</div>
+                      <div className="mt-2 flex items-center gap-1 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${inc.severity==='Critical'?'bg-red-50 text-red-700 border-red-200':inc.severity==='High'?'bg-amber-50 text-amber-700 border-amber-200':'bg-slate-100 text-slate-600 border-slate-200'}`}>{inc.severity}</span>
+                        {['Open','In Review','Resolved','Closed'].map(s=>(
+                          <button key={s} onClick={()=>{ const upd = incidents.map(x=> x.id===inc.id ? { ...x, status: s } : x); setIncidents(upd); toast.success(`Incident → ${s}`) }} className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${inc.status===s?'bg-slate-900 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
+                        ))}
+                        <span className="ml-auto text-xs text-slate-500">{inc.date}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500 mb-2 flex items-center justify-between">Accidents ({siteAccidents.length}) <button onClick={()=>setShowAccident(true)} className="px-2.5 py-1 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center gap-1"><Plus size={11} /> Add</button></div>
+                <div className="space-y-2">
+                  {siteAccidents.length===0 ? <div className="text-sm text-slate-500 bg-slate-50 rounded-xl border p-4 text-center" style={{ borderColor:'#eef2f7' }}>No accidents for this site.</div> : siteAccidents.map(acc=>(
+                    <div key={acc.id} className="border rounded-xl p-3 bg-red-50/50" style={{ borderColor:'#fecaca' }}>
+                      <div className="font-bold text-sm flex items-center justify-between">{acc.title}<button onClick={()=>{ setAccidents(prev=> prev.filter(x=>x.id!==acc.id)); toast.success('Deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
+                      <div className="text-xs text-slate-600 mt-1">{acc.description}</div>
+                      <div className="text-xs text-slate-500 mt-1">{acc.date} • {acc.reportedBy} • {acc.severity}</div>
+                      <div className="mt-2 flex gap-1 flex-wrap">
+                        {['Open','In Review','Resolved','Closed'].map(s=>(
+                          <button key={s} onClick={()=>{ setAccidents(prev=> prev.map(x=> x.id===acc.id ? { ...x, status: s } : x)); toast.success(`Accident → ${s}`) }} className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${acc.status===s?'bg-red-600 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Owner details (secondary) */}
+        <div className="mt-4">
           {/* Owner Card */}
-          <div className="lg:col-span-4 bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
+          <div className="lg:col-span-12 bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
             <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
               <div className="font-bold text-sm flex items-center gap-2"><User size={14} /> Owner Details</div>
               {!editMode ? <button onClick={()=>setEditMode(true)} className="px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center gap-1"><Pencil size={12} /> Edit</button> : <div className="flex gap-1"><button onClick={saveOwner} className="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center gap-1"><Save size={12} /> Save</button><button onClick={()=>setEditMode(false)} className="px-3 py-1 rounded-full bg-white border text-xs font-bold" style={{ borderColor:'#e2e8f0' }}><X size={12} /></button></div>}
@@ -498,134 +640,7 @@ export default function App(){
             </div>
           </div>
 
-          {/* Editable AMC Stats for this site */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-              <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total Cameras</div>
-                <div className="mt-1 flex items-center gap-2"><span className="text-2xl font-extrabold">{selectedSite.totalCameras||0}</span><button onClick={openSiteEdit} className="ml-auto p-1 rounded-full hover:bg-slate-100"><Edit3 size={14} /></button></div>
-                <div className="text-xs text-slate-500">Editable</div>
-              </div>
-              <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.offlineCameras||0)>0 ? '#fecaca' : '#e2e8f0' }}>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-red-600 flex items-center justify-between">Offline Cameras <WifiOff size={12} /></div>
-                <div className="mt-1 flex items-center gap-2"><span className="text-2xl font-extrabold text-red-600">{selectedSite.offlineCameras||0}</span><span className="text-xs px-1.5 py-0.5 rounded bg-red-50 border border-red-200 font-bold">{selectedSite.totalCameras ? Math.round(((selectedSite.offlineCameras||0)/selectedSite.totalCameras)*100) : 0}%</span></div>
-                <div className="mt-2 flex gap-1">
-                  <button onClick={()=>makeOnline('offlineCameras')} className="flex-1 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center justify-center gap-1"><CheckCircle2 size={12} /> Make online</button>
-                  <button onClick={openSiteEdit} className="px-2 py-1 rounded-full border bg-white text-xs font-bold" style={{ borderColor:'#e2e8f0' }}><Edit3 size={12} /></button>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total ANPR</div>
-                <div className="mt-1 flex items-center gap-2"><span className="text-2xl font-extrabold">{selectedSite.totalANPR||0}</span><button onClick={openSiteEdit} className="ml-auto p-1 rounded-full hover:bg-slate-100"><Edit3 size={14} /></button></div>
-              </div>
-              <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.offlineANPR||0)>0 ? '#fde68a' : '#e2e8f0' }}>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-amber-700">Offline ANPR</div>
-                <div className="mt-1 text-2xl font-extrabold text-amber-600">{selectedSite.offlineANPR||0}</div>
-                <div className="mt-2 flex gap-1">
-                  <button onClick={()=>makeOnline('offlineANPR')} className="flex-1 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold"><CheckCircle2 size={12} className="inline mr-1" />Make online</button>
-                  <button onClick={openSiteEdit} className="px-2 py-1 rounded-full border bg-white text-xs font-bold" style={{ borderColor:'#e2e8f0' }}><Edit3 size={12} /></button>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.notWorkingANPR||0)>0 ? '#ddd6fe' : '#e2e8f0' }}>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-violet-700">Not Working ACS</div>
-                <div className="mt-1 text-2xl font-extrabold text-violet-700">{selectedSite.notWorkingANPR||0}</div>
-                <button onClick={()=>makeOnline('notWorkingANPR')} className="mt-2 w-full py-1 rounded-full bg-slate-900 text-white text-xs font-bold">Mark fixed</button>
-              </div>
-              <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.notWorkingGate||0)>0 ? '#bae6fd' : '#e2e8f0' }}>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-sky-700">Gate Barrier</div>
-                <div className="mt-1 text-2xl font-extrabold">{selectedSite.notWorkingGate||0} <span className="text-xs font-normal text-slate-500">fail</span></div>
-                <button onClick={openSiteEdit} className="mt-1 text-xs underline font-bold">Edit count</button>
-                <button onClick={()=>makeOnline('notWorkingGate')} className="mt-2 w-full py-1 rounded-full bg-sky-600 text-white text-xs font-bold">Make online</button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Intercom</div><div className="text-xl font-extrabold">{selectedSite.notWorkingIntercom||0} <span className="text-xs text-slate-500">fail</span></div><button onClick={openSiteEdit} className="mt-1 text-xs underline font-bold">Edit count</button><button onClick={()=>makeOnline('notWorkingIntercom')} className="mt-1 text-xs underline font-bold">Make online</button></div>
-              <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Incidents</div><div className="text-xl font-extrabold">{siteIncidents.length}</div><div className="text-xs text-slate-500">{siteIncidents.filter(i=>i.status==='Open').length} open</div></div>
-              <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Accidents</div><div className="text-xl font-extrabold">{siteAccidents.length}</div><div className="text-xs text-slate-500">{siteAccidents.filter(a=>a.status==='Open').length} open</div></div>
-            </div>
-            {/* Charts for my site */}
-            <div className="grid lg:grid-cols-2 gap-3">
-              <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-                <div className="text-xs font-bold tracking-widest uppercase text-slate-500">Cameras â€” My Site</div>
-                <div className="h-[160px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={camerasPieData} cx="50%" cy="50%" innerRadius={36} outerRadius={56} dataKey="value" isAnimationActive={false}>
-                        <Cell fill="#10b981" /><Cell fill="#ef4444" />
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex justify-center gap-3 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online {Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />Offline {selectedSite.offlineCameras||0}</span></div>
-              </div>
-              <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-                <div className="text-xs font-bold tracking-widest uppercase text-slate-500">ANPR â€” My Site</div>
-                <div className="h-[160px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={anprPieData} cx="50%" cy="50%" innerRadius={36} outerRadius={56} dataKey="value" isAnimationActive={false}>
-                        <Cell fill="#10b981" /><Cell fill="#f59e0b" /><Cell fill="#7c3aed" />
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex justify-center gap-2 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />Offline {selectedSite.offlineANPR||0}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-600" />Not Working {selectedSite.notWorkingANPR||0}</span></div>
-              </div>
-            </div>
-          </div>
         </div>
-
-        <div className="mt-6 grid lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
-            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
-              <div className="font-bold text-sm flex items-center gap-2"><FileText size={14} /> Incidents â€” {selectedSite.name}</div>
-              <span className="text-xs px-2 py-1 rounded-full bg-slate-100 border" style={{ borderColor:'#e2e8f0' }}>{siteIncidents.length}</span>
-            </div>
-            <div className="p-3 space-y-2 max-h-[420px] overflow-auto">
-              {siteIncidents.length===0 ? <div className="text-sm text-slate-500 text-center py-8">No incidents for this site.</div> : siteIncidents.map(inc=>(
-                <div key={inc.id} className="border rounded-xl p-3 bg-slate-50" style={{ borderColor:'#eef2f7' }}>
-                  <div className="font-bold text-sm flex items-center justify-between">{inc.title}<button onClick={()=>{ setIncidents(prev=>prev.filter(x=>x.id!==inc.id)); toast.success('Incident deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
-                  <div className="text-xs text-slate-600 mt-1">{inc.description}</div>
-                  <div className="mt-2 flex gap-1">
-                    {['Open','In Review','Resolved','Closed'].map(s=>(
-                      <button key={s} onClick={()=>{
-                        const upd = incidents.map(x=> x.id===inc.id ? { ...x, status: s } : x)
-                        setIncidents(upd)
-                        toast.success(`Incident â†’ ${s}`)
-                      }} className={`px-2 py-1 rounded-full border text-xs font-bold ${inc.status===s?'bg-slate-900 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
-            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
-              <div className="font-bold text-sm flex items-center gap-2"><AlertTriangle size={14} /> Accidents â€” {selectedSite.name}</div>
-              <button onClick={()=>setShowAccident(true)} className="px-3 py-1 rounded-full bg-red-600 text-white text-xs font-bold flex items-center gap-1"><Plus size={12} /> Add</button>
-            </div>
-            <div className="p-3 space-y-2 max-h-[420px] overflow-auto">
-              {siteAccidents.length===0 ? <div className="text-sm text-slate-500 text-center py-8">No accidents.</div> : siteAccidents.map(acc=>(
-                <div key={acc.id} className="border rounded-xl p-3 bg-red-50/50" style={{ borderColor:'#fecaca' }}>
-                  <div className="font-bold text-sm flex items-center justify-between">{acc.title}<button onClick={()=>{ setAccidents(prev=> prev.filter(x=>x.id!==acc.id)); toast.success('Deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
-                  <div className="text-xs text-slate-600 mt-1">{acc.description}</div>
-                  <div className="text-xs text-slate-500 mt-1">{acc.date} â€¢ {acc.reportedBy} â€¢ {acc.severity}</div>
-                  <div className="mt-2 flex gap-1">
-                    {['Open','In Review','Resolved','Closed'].map(s=>(
-                      <button key={s} onClick={()=>{ setAccidents(prev=> prev.map(x=> x.id===acc.id ? { ...x, status: s } : x)); toast.success(`Accident â†’ ${s}`) }} className={`px-2 py-1 rounded-full border text-xs font-bold ${acc.status===s?'bg-red-600 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <p className="mt-6 text-center text-xs text-slate-400">Owner Portal â€¢ Linked to main dashboard â€¢ Edits update main dashboard live (shared localStorage) â€¢ <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to DHRE Security Dashboard</a></p>
       </main>
 
       {/* Floating quick-edit tab */}
