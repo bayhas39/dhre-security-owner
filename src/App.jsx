@@ -503,9 +503,7 @@ export default function App(){
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
                 <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total Cameras</div>
-                <div className="mt-1 flex items-center gap-2"><span className="text-2xl font-extrabold">{selectedSite.totalCameras||0}</span><button onClick={()=>{
-                  const v=prompt('Number of cameras', String(selectedSite.totalCameras||0)); if(v!==null) updateSiteField('totalCameras', Math.max(0, parseInt(v)||0))
-                }} className="ml-auto p-1 rounded-full hover:bg-slate-100"><Edit3 size={14} /></button></div>
+                <div className="mt-1 flex items-center gap-2"><span className="text-2xl font-extrabold">{selectedSite.totalCameras||0}</span><button onClick={openSiteEdit} className="ml-auto p-1 rounded-full hover:bg-slate-100"><Edit3 size={14} /></button></div>
                 <div className="text-xs text-slate-500">Editable</div>
               </div>
               <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.offlineCameras||0)>0 ? '#fecaca' : '#e2e8f0' }}>
@@ -513,25 +511,19 @@ export default function App(){
                 <div className="mt-1 flex items-center gap-2"><span className="text-2xl font-extrabold text-red-600">{selectedSite.offlineCameras||0}</span><span className="text-xs px-1.5 py-0.5 rounded bg-red-50 border border-red-200 font-bold">{selectedSite.totalCameras ? Math.round(((selectedSite.offlineCameras||0)/selectedSite.totalCameras)*100) : 0}%</span></div>
                 <div className="mt-2 flex gap-1">
                   <button onClick={()=>makeOnline('offlineCameras')} className="flex-1 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center justify-center gap-1"><CheckCircle2 size={12} /> Make online</button>
-                  <button onClick={()=>{
-                    const v=prompt('Offline cameras', String(selectedSite.offlineCameras||0)); if(v!==null) updateSiteField('offlineCameras', Math.max(0, Math.min(selectedSite.totalCameras||0, parseInt(v)||0)))
-                  }} className="px-2 py-1 rounded-full border bg-white text-xs font-bold" style={{ borderColor:'#e2e8f0' }}><Edit3 size={12} /></button>
+                  <button onClick={openSiteEdit} className="px-2 py-1 rounded-full border bg-white text-xs font-bold" style={{ borderColor:'#e2e8f0' }}><Edit3 size={12} /></button>
                 </div>
               </div>
               <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
                 <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total ANPR</div>
-                <div className="mt-1 flex items-center gap-2"><span className="text-2xl font-extrabold">{selectedSite.totalANPR||0}</span><button onClick={()=>{
-                  const v=prompt('Total ANPR', String(selectedSite.totalANPR||0)); if(v!==null) updateSiteField('totalANPR', Math.max(0, parseInt(v)||0))
-                }} className="ml-auto p-1 rounded-full hover:bg-slate-100"><Edit3 size={14} /></button></div>
+                <div className="mt-1 flex items-center gap-2"><span className="text-2xl font-extrabold">{selectedSite.totalANPR||0}</span><button onClick={openSiteEdit} className="ml-auto p-1 rounded-full hover:bg-slate-100"><Edit3 size={14} /></button></div>
               </div>
               <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.offlineANPR||0)>0 ? '#fde68a' : '#e2e8f0' }}>
                 <div className="text-[11px] font-bold tracking-widest uppercase text-amber-700">Offline ANPR</div>
                 <div className="mt-1 text-2xl font-extrabold text-amber-600">{selectedSite.offlineANPR||0}</div>
                 <div className="mt-2 flex gap-1">
                   <button onClick={()=>makeOnline('offlineANPR')} className="flex-1 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold"><CheckCircle2 size={12} className="inline mr-1" />Make online</button>
-                  <button onClick={()=>{
-                    const v=prompt('Offline ANPR', String(selectedSite.offlineANPR||0)); if(v!==null) updateSiteField('offlineANPR', Math.max(0, Math.min(selectedSite.totalANPR||0, parseInt(v)||0)))
-                  }} className="px-2 py-1 rounded-full border bg-white text-xs font-bold" style={{ borderColor:'#e2e8f0' }}><Edit3 size={12} /></button>
+                  <button onClick={openSiteEdit} className="px-2 py-1 rounded-full border bg-white text-xs font-bold" style={{ borderColor:'#e2e8f0' }}><Edit3 size={12} /></button>
                 </div>
               </div>
               <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.notWorkingANPR||0)>0 ? '#ddd6fe' : '#e2e8f0' }}>
@@ -542,13 +534,13 @@ export default function App(){
               <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.notWorkingGate||0)>0 ? '#bae6fd' : '#e2e8f0' }}>
                 <div className="text-[11px] font-bold tracking-widest uppercase text-sky-700">Gate Barrier</div>
                 <div className="mt-1 text-2xl font-extrabold">{selectedSite.notWorkingGate||0} <span className="text-xs font-normal text-slate-500">fail</span></div>
-                <button onClick={()=>{ const v=prompt('Gate barrier failures', String(selectedSite.notWorkingGate||0)); if(v!==null) updateSiteField('notWorkingGate', Math.max(0, parseInt(v)||0)) }} className="mt-1 text-xs underline font-bold">Edit count</button>
+                <button onClick={openSiteEdit} className="mt-1 text-xs underline font-bold">Edit count</button>
                 <button onClick={()=>makeOnline('notWorkingGate')} className="mt-2 w-full py-1 rounded-full bg-sky-600 text-white text-xs font-bold">Make online</button>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Intercom</div><div className="text-xl font-extrabold">{selectedSite.notWorkingIntercom||0} <span className="text-xs text-slate-500">fail</span></div><button onClick={()=>{ const v=prompt('Intercom failures', String(selectedSite.notWorkingIntercom||0)); if(v!==null) updateSiteField('notWorkingIntercom', Math.max(0, parseInt(v)||0)) }} className="mt-1 text-xs underline font-bold">Edit count</button><button onClick={()=>makeOnline('notWorkingIntercom')} className="mt-1 text-xs underline font-bold">Make online</button></div>
+              <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Intercom</div><div className="text-xl font-extrabold">{selectedSite.notWorkingIntercom||0} <span className="text-xs text-slate-500">fail</span></div><button onClick={openSiteEdit} className="mt-1 text-xs underline font-bold">Edit count</button><button onClick={()=>makeOnline('notWorkingIntercom')} className="mt-1 text-xs underline font-bold">Make online</button></div>
               <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Incidents</div><div className="text-xl font-extrabold">{siteIncidents.length}</div><div className="text-xs text-slate-500">{siteIncidents.filter(i=>i.status==='Open').length} open</div></div>
               <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Accidents</div><div className="text-xl font-extrabold">{siteAccidents.length}</div><div className="text-xs text-slate-500">{siteAccidents.filter(a=>a.status==='Open').length} open</div></div>
             </div>
@@ -635,6 +627,9 @@ export default function App(){
 
         <p className="mt-6 text-center text-xs text-slate-400">Owner Portal â€¢ Linked to main dashboard â€¢ Edits update main dashboard live (shared localStorage) â€¢ <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to DHRE Security Dashboard</a></p>
       </main>
+
+      {/* Floating quick-edit tab */}
+      <button onClick={openSiteEdit} className="fixed bottom-5 right-5 z-30 px-4 py-2.5 rounded-full bg-slate-900 text-white text-xs font-bold shadow-xl flex items-center gap-2 hover:bg-black"><Edit3 size={14} /> Edit Site</button>
 
       {/* Edit Site â€” fully updateable, syncs to main */}
       <AnimatePresence>
