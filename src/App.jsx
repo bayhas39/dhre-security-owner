@@ -490,6 +490,7 @@ export default function App(){
             </div>
           </div>
           <span className="ml-auto hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-xs font-bold"><ShieldCheck size={12} /> My Site Website — All things in one dashboard</span>
+          <button onClick={openSiteEdit} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-black shadow"><Pencil size={12} /> Edit</button>
         </div>
 
         {/* Stat cards */}
