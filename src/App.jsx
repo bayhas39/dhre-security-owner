@@ -478,139 +478,114 @@ export default function App(){
       </header>
 
       <main className="max-w-[1280px] mx-auto px-4 lg:px-6 py-6">
-        <div className="bg-white rounded-[24px] border overflow-hidden" style={{ borderColor:'#e2e8f0', boxShadow:'0 10px 30px rgba(15,23,42,0.06)' }}>
-          {/* Header */}
-          <div className="px-5 py-4 border-b flex items-center gap-3 flex-wrap" style={{ borderColor:'#eef2f7' }}>
-            <div className="w-10 h-10 rounded-xl bg-blue-500 text-white grid place-items-center shrink-0"><Building2 size={18} /></div>
-            <div className="min-w-0">
-              <h1 className="font-extrabold text-lg leading-tight truncate">{selectedSite.name}</h1>
-              <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <MapPin size={11} /> {selectedSite.location} <span>•</span> {selectedSite.type} <span>•</span>
-                <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full border ${selectedSite.status==='Completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':selectedSite.status==='Issue Found'?'bg-red-50 text-red-700 border-red-200':selectedSite.status==='In Progress'?'bg-sky-50 text-sky-700 border-sky-200':'bg-amber-50 text-amber-700 border-amber-200'}`}><span className={`w-1.5 h-1.5 rounded-full ${selectedSite.status==='Completed'?'bg-emerald-500':selectedSite.status==='Issue Found'?'bg-red-500':selectedSite.status==='In Progress'?'bg-sky-500':'bg-amber-500'}`} /> {selectedSite.status}</span>
-              </div>
-            </div>
-            <div className="ml-auto flex items-center gap-2 shrink-0">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold"><KeyIcon size={12} /> {selectedSite.pincode} <button onClick={()=>{ navigator.clipboard?.writeText(selectedSite.pincode); toast.success('Pincode copied') }} className="opacity-70 hover:opacity-100"><Copy size={12} /></button></span>
-              <button onClick={openSiteEdit} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-white text-xs font-bold hover:bg-slate-50" style={{ borderColor:'#e2e8f0' }}><Pencil size={12} /> Edit</button>
+        {/* Site summary card */}
+        <div className="bg-white rounded-2xl border p-4 flex items-center gap-3 flex-wrap" style={{ borderColor:'#e2e8f0' }}>
+          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white grid place-items-center shrink-0"><HardHat size={18} /></div>
+          <div className="min-w-0">
+            <div className="font-extrabold leading-tight truncate">{selectedSite.name}</div>
+            <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <MapPin size={11} /> {selectedSite.location} <span>•</span> {selectedSite.type} <span>•</span>
+              <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full border ${selectedSite.status==='Completed'?'bg-emerald-50 text-emerald-700 border-emerald-200':selectedSite.status==='Issue Found'?'bg-red-50 text-red-700 border-red-200':selectedSite.status==='In Progress'?'bg-sky-50 text-sky-700 border-sky-200':'bg-amber-50 text-amber-700 border-amber-200'}`}><span className={`w-1.5 h-1.5 rounded-full ${selectedSite.status==='Completed'?'bg-emerald-500':selectedSite.status==='Issue Found'?'bg-red-500':selectedSite.status==='In Progress'?'bg-sky-500':'bg-amber-500'}`} /> {selectedSite.status}</span>
+              <span>•</span> {selectedSite.pincode}
             </div>
           </div>
+          <span className="ml-auto hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-xs font-bold"><ShieldCheck size={12} /> My Site Website — All things in one dashboard</span>
+        </div>
 
-          {/* Stat cards */}
-          <div className="p-5 grid grid-cols-2 lg:grid-cols-5 gap-3">
-            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-              <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total Cameras</div>
-              <div className="mt-1 text-2xl font-extrabold">{selectedSite.totalCameras||0}</div>
-              <div className="text-xs text-slate-500">{Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))} online • {selectedSite.offlineCameras||0} offline</div>
-            </div>
-            <div className="bg-red-50/40 rounded-xl border p-3" style={{ borderColor:'#fecaca' }}>
-              <div className="text-[11px] font-bold tracking-widest uppercase text-red-600">Offline CCTV</div>
-              <div className="mt-1 text-2xl font-extrabold text-red-600">{selectedSite.offlineCameras||0}</div>
-              <div className="text-xs text-slate-500">{selectedSite.totalCameras ? Math.round(((selectedSite.offlineCameras||0)/selectedSite.totalCameras)*100) : 0}% offline</div>
-            </div>
-            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-              <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">ANPR</div>
-              <div className="mt-1 text-2xl font-extrabold">{selectedSite.totalANPR||0}</div>
-              <div className="text-xs text-slate-500">Offline {selectedSite.offlineANPR||0} • Not working {selectedSite.notWorkingANPR||0}</div>
-            </div>
-            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-              <div className="text-[11px] font-bold tracking-widest uppercase text-amber-600">Problems</div>
-              <div className="mt-1 text-2xl font-extrabold">{problemTypes.length}</div>
-              <div className="text-xs text-slate-500 truncate">{problemTypes.slice(0,2).join(' • ') || 'None'}</div>
-            </div>
-            <div className="bg-amber-50/60 rounded-xl border p-3" style={{ borderColor:'#fde68a' }}>
-              <div className="text-[11px] font-bold tracking-widest uppercase text-amber-700 flex items-center justify-between">Pincode <KeyIcon size={12} /></div>
-              <div className="mt-1 text-2xl font-extrabold font-mono tracking-widest">{selectedSite.pincode}</div>
-              <div className="text-xs flex items-center gap-2 mt-0.5">
-                <button onClick={()=>{ navigator.clipboard?.writeText(window.location.href); toast.success('Link copied') }} className="underline font-bold text-amber-700">Copy link</button>
-              </div>
-              <button onClick={()=>{ updateSiteField('pincode', String(1000+Math.floor(Math.random()*9000))); toast.success('Pincode regenerated') }} className="mt-1 text-xs underline font-bold text-amber-700">Regenerate</button>
-            </div>
+        {/* Stat cards */}
+        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-white rounded-2xl border p-4" style={{ borderColor:'#e2e8f0' }}>
+            <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total Cameras</div>
+            <div className="mt-1 text-2xl font-extrabold">{selectedSite.totalCameras||0}</div>
+            <div className="text-xs text-slate-500">{Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))} online • {selectedSite.offlineCameras||0} offline</div>
+            <button onClick={()=>{ const v=prompt('Total Cameras', String(selectedSite.totalCameras||0)); if(v!==null) updateSiteField('totalCameras', Math.max(0, parseInt(v)||0)) }} className="mt-2 text-xs underline font-bold">Edit</button>
           </div>
-
-          {/* Charts */}
-          <div className="px-5 pb-5 grid lg:grid-cols-2 gap-3">
-            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-              <div className="text-xs font-bold tracking-widest uppercase text-slate-500">Cameras — This Site</div>
-              <div className="h-[150px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={camerasPieData} cx="50%" cy="50%" innerRadius={34} outerRadius={54} dataKey="value" isAnimationActive={false}>
-                      <Cell fill="#10b981" /><Cell fill="#ef4444" />
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex justify-center gap-3 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online {Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />Offline {selectedSite.offlineCameras||0}</span></div>
-            </div>
-            <div className="bg-slate-50 rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-              <div className="text-xs font-bold tracking-widest uppercase text-slate-500">ANPR — This Site</div>
-              <div className="h-[150px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={anprPieData} cx="50%" cy="50%" innerRadius={34} outerRadius={54} dataKey="value" isAnimationActive={false}>
-                      <Cell fill="#10b981" /><Cell fill="#f59e0b" /><Cell fill="#7c3aed" />
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex justify-center gap-2 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />Offline {selectedSite.offlineANPR||0}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-600" />Not Working {selectedSite.notWorkingANPR||0}</span></div>
-            </div>
+          <div className="bg-red-50/40 rounded-2xl border p-4" style={{ borderColor:'#fecaca' }}>
+            <div className="text-[11px] font-bold tracking-widest uppercase text-red-600">Offline CCTV</div>
+            <div className="mt-1 text-2xl font-extrabold text-red-600">{selectedSite.offlineCameras||0}</div>
+            <button onClick={()=>makeOnline('offlineCameras')} className="mt-2 w-full py-2 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700">Make online</button>
           </div>
+          <div className="bg-white rounded-2xl border p-4" style={{ borderColor:'#e2e8f0' }}>
+            <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total ANPR</div>
+            <div className="mt-1 text-2xl font-extrabold">{selectedSite.totalANPR||0}</div>
+            <button onClick={()=>{ const v=prompt('Total ANPR', String(selectedSite.totalANPR||0)); if(v!==null) updateSiteField('totalANPR', Math.max(0, parseInt(v)||0)) }} className="mt-2 text-xs underline font-bold">Edit</button>
+          </div>
+          <div className="bg-amber-50/40 rounded-2xl border p-4" style={{ borderColor:'#fde68a' }}>
+            <div className="text-[11px] font-bold tracking-widest uppercase text-amber-600">Offline ANPR</div>
+            <div className="mt-1 text-2xl font-extrabold text-amber-600">{selectedSite.offlineANPR||0}</div>
+            <button onClick={()=>makeOnline('offlineANPR')} className="mt-2 w-full py-2 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700">Make online</button>
+          </div>
+        </div>
 
-          {/* Issues */}
-          <div className="mx-5 mb-5 border rounded-2xl" style={{ borderColor:'#e2e8f0' }}>
-            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
-              <div className="font-bold text-sm flex items-center gap-2"><AlertTriangle size={14} className="text-amber-500" /> Issues for this site • {problemTypes.length} problems</div>
-              <span className="text-xs px-2 py-1 rounded-full bg-slate-100 border" style={{ borderColor:'#e2e8f0' }}>{siteIncidents.length} incidents • {siteAccidents.length} accidents</span>
-            </div>
-            <div className="px-4 py-3 flex gap-2 flex-wrap">
-              {problemTypes.length===0 ? <span className="text-xs text-slate-500">No open problems.</span> : problemTypes.map(p=>(
-                <span key={p} className="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">{p}</span>
-              ))}
-            </div>
-            <div className="px-4 pb-4 grid lg:grid-cols-2 gap-3">
-              <div>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500 mb-2">Incidents ({siteIncidents.length})</div>
-                <div className="space-y-2">
-                  {siteIncidents.length===0 ? <div className="text-sm text-slate-500 bg-slate-50 rounded-xl border p-4 text-center" style={{ borderColor:'#eef2f7' }}>No incidents for this site.</div> : siteIncidents.map(inc=>(
-                    <div key={inc.id} className="border rounded-xl p-3 bg-slate-50" style={{ borderColor:'#eef2f7' }}>
-                      <div className="font-bold text-sm flex items-center justify-between">{inc.title}<button onClick={()=>{ setIncidents(prev=>prev.filter(x=>x.id!==inc.id)); toast.success('Incident deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
-                      <div className="text-xs text-slate-600 mt-1">{inc.description}</div>
-                      <div className="mt-2 flex items-center gap-1 flex-wrap">
-                        <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${inc.severity==='Critical'?'bg-red-50 text-red-700 border-red-200':inc.severity==='High'?'bg-amber-50 text-amber-700 border-amber-200':'bg-slate-100 text-slate-600 border-slate-200'}`}>{inc.severity}</span>
-                        {['Open','In Review','Resolved','Closed'].map(s=>(
-                          <button key={s} onClick={()=>{ const upd = incidents.map(x=> x.id===inc.id ? { ...x, status: s } : x); setIncidents(upd); toast.success(`Incident → ${s}`) }} className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${inc.status===s?'bg-slate-900 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
-                        ))}
-                        <span className="ml-auto text-xs text-slate-500">{inc.date}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        {/* Not working + Problems */}
+        <div className="mt-4 grid lg:grid-cols-3 gap-3">
+          <div className="bg-white rounded-2xl border p-4" style={{ borderColor:'#e2e8f0' }}>
+            <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Not Working</div>
+            {[['ACS','notWorkingANPR','#7c3aed'],['Gate barrier','notWorkingGate','#0ea5e9'],['Intercom','notWorkingIntercom','#0d9488']].map(([label,field,color])=>(
+              <div key={field} className="mt-3 flex items-center gap-2">
+                <span className="text-sm">{label}</span>
+                <span className="mx-auto text-lg font-extrabold">{selectedSite[field]||0}</span>
+                <button onClick={()=>makeOnline(field)} className="text-xs underline font-bold" style={{ color }}>Fix</button>
               </div>
-              <div>
-                <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500 mb-2 flex items-center justify-between">Accidents ({siteAccidents.length}) <button onClick={()=>setShowAccident(true)} className="px-2.5 py-1 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center gap-1"><Plus size={11} /> Add</button></div>
-                <div className="space-y-2">
-                  {siteAccidents.length===0 ? <div className="text-sm text-slate-500 bg-slate-50 rounded-xl border p-4 text-center" style={{ borderColor:'#eef2f7' }}>No accidents for this site.</div> : siteAccidents.map(acc=>(
-                    <div key={acc.id} className="border rounded-xl p-3 bg-red-50/50" style={{ borderColor:'#fecaca' }}>
-                      <div className="font-bold text-sm flex items-center justify-between">{acc.title}<button onClick={()=>{ setAccidents(prev=> prev.filter(x=>x.id!==acc.id)); toast.success('Deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
-                      <div className="text-xs text-slate-600 mt-1">{acc.description}</div>
-                      <div className="text-xs text-slate-500 mt-1">{acc.date} • {acc.reportedBy} • {acc.severity}</div>
-                      <div className="mt-2 flex gap-1 flex-wrap">
-                        {['Open','In Review','Resolved','Closed'].map(s=>(
-                          <button key={s} onClick={()=>{ setAccidents(prev=> prev.map(x=> x.id===acc.id ? { ...x, status: s } : x)); toast.success(`Accident → ${s}`) }} className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${acc.status===s?'bg-red-600 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            ))}
+          </div>
+          <div className="lg:col-span-2 bg-white rounded-2xl border p-4" style={{ borderColor:'#e2e8f0' }}>
+            <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500 flex items-center gap-2 flex-wrap">Problems for this site
+              <span className="ml-auto flex gap-1.5 flex-wrap">{problemTypes.length===0 ? <span className="text-xs text-slate-400 normal-case">None</span> : problemTypes.map(p=>(<span key={p} className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold normal-case">{p}</span>))}</span>
+            </div>
+            <div className="h-[140px] mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[{ n:'Cam Off', v:selectedSite.offlineCameras||0 },{ n:'ANPR Off', v:selectedSite.offlineANPR||0 },{ n:'ACS', v:selectedSite.notWorkingANPR||0 },{ n:'Gate', v:selectedSite.notWorkingGate||0 },{ n:'Intercom', v:selectedSite.notWorkingIntercom||0 }]}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="n" tick={{ fontSize:9 }} />
+                  <YAxis tick={{ fontSize:9 }} />
+                  <Tooltip />
+                  <Bar dataKey="v" fill="#ef4444" radius={[2,2,0,0]} isAnimationActive={false} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* Owner details (secondary) */}
+        {/* Incidents / Accidents */}
+        <div className="mt-4 grid lg:grid-cols-2 gap-3">
+          <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
+            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
+              <div className="font-bold text-sm flex items-center gap-2"><FileText size={14} /> Incidents — {siteIncidents.length}</div>
+              <span className="text-xs text-slate-500 underline font-bold cursor-pointer">View all →</span>
+            </div>
+            <div className="p-6 text-center text-sm text-slate-500">
+              {siteIncidents.length===0 ? 'No incidents for this site.' : siteIncidents.map(inc=>(
+                <div key={inc.id} className="text-left border rounded-xl p-3 bg-slate-50 mb-2" style={{ borderColor:'#eef2f7' }}>
+                  <div className="font-bold text-sm flex items-center justify-between">{inc.title}<button onClick={()=>{ setIncidents(prev=>prev.filter(x=>x.id!==inc.id)); toast.success('Incident deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
+                  <div className="text-xs text-slate-600 mt-1">{inc.description}</div>
+                  <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                    <span className={`px-2 py-0.5 rounded-full border text-[11px] font-bold ${inc.severity==='Critical'?'bg-red-50 text-red-700 border-red-200':inc.severity==='High'?'bg-amber-50 text-amber-700 border-amber-200':'bg-slate-100 text-slate-600 border-slate-200'}`}>{inc.severity}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white border text-[11px] font-bold" style={{ borderColor:'#e2e8f0' }}>{inc.status}</span>
+                    <span className="ml-auto text-xs text-slate-500">{inc.date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-red-50/40 rounded-2xl border overflow-hidden" style={{ borderColor:'#fecaca' }}>
+            <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#fecaca' }}>
+              <div className="font-bold text-sm flex items-center gap-2"><AlertTriangle size={14} /> Accidents — {siteAccidents.length}</div>
+              <span className="text-xs px-2 py-1 rounded-full bg-white border font-bold" style={{ borderColor:'#fecaca' }}>{siteAccidents.filter(a=>a.status==='Open').length} open</span>
+            </div>
+            <div className="p-6 text-center text-sm text-slate-500">
+              {siteAccidents.length===0 ? 'No accidents for this site.' : siteAccidents.map(acc=>(
+                <div key={acc.id} className="text-left border rounded-xl p-3 bg-white mb-2" style={{ borderColor:'#fecaca' }}>
+                  <div className="font-bold text-sm flex items-center justify-between">{acc.title}<button onClick={()=>{ setAccidents(prev=> prev.filter(x=>x.id!==acc.id)); toast.success('Deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
+                  <div className="text-xs text-slate-600 mt-1">{acc.description}</div>
+                  <div className="text-xs text-slate-500 mt-1">{acc.date} • {acc.reportedBy} • {acc.severity} • {acc.status}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+{/* Owner details (secondary) */}
         <div className="mt-4">
           {/* Owner Card */}
           <div className="lg:col-span-12 bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
@@ -640,8 +615,7 @@ export default function App(){
             </div>
           </div>
 
-        </div>
-      </main>
+        </div>      </main>
 
       {/* Floating quick-edit tab */}
       <button onClick={openSiteEdit} className="fixed bottom-5 right-5 z-30 px-4 py-2.5 rounded-full bg-slate-900 text-white text-xs font-bold shadow-xl flex items-center gap-2 hover:bg-black"><Edit3 size={14} /> Edit Site</button>
