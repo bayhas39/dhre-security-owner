@@ -1,11 +1,14 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo, Suspense, lazy } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, MapPin, User, Building2, ClipboardCheck, Pencil, Save, X, Video, Camera, ScanSearch, WifiOff, AlertTriangle, FileText, ShieldCheck, HardHat, Home, Factory, ArrowLeft, Phone, Mail, Briefcase, Calendar, CheckCircle2, Plus, Trash2, Edit3, Copy, Key as KeyIcon } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { KEYS, publish, subscribe, readKey, ensureLegacyMirror } from './sync.js'
 import { SUPABASE_ENABLED, publishBoth, pullAll, subscribeRemote, primeRemote } from './remote.js'
 import { autoUpdateAll, summarizeByPeriod, generateNarrative, computeHealth } from './ai-engine.js'
+
+const ProblemsChart = lazy(()=>import('./Charts.jsx').then(m=>({default:m.ProblemsChart})))
+const DailyChart = lazy(()=>import('./Charts.jsx').then(m=>({default:m.DailyChart})))
+const MonthlyChart = lazy(()=>import('./Charts.jsx').then(m=>({default:m.MonthlyChart})))
 
 function genId(){ return Math.random().toString(36).slice(2,9) }
 function genDeterministicId(i){ return 'site-' + String(i).padStart(3,'0') + '-' + String(1000 + ((i*7331)%9000)) }
@@ -535,15 +538,9 @@ export default function App(){
               <span className="ml-auto flex gap-1.5 flex-wrap">{problemTypes.length===0 ? <span className="text-xs text-slate-400 normal-case">None</span> : problemTypes.map(p=>(<span key={p} className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold normal-case">{p}</span>))}</span>
             </div>
             <div className="h-[140px] mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={[{ n:'Cam Off', v:selectedSite.offlineCameras||0 },{ n:'ANPR Off', v:selectedSite.offlineANPR||0 },{ n:'ACS', v:selectedSite.notWorkingANPR||0 },{ n:'Gate', v:selectedSite.notWorkingGate||0 },{ n:'Intercom', v:selectedSite.notWorkingIntercom||0 }]}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="n" tick={{ fontSize:9 }} />
-                  <YAxis tick={{ fontSize:9 }} />
-                  <Tooltip />
-                  <Bar dataKey="v" fill="#ef4444" radius={[2,2,0,0]} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<div className="h-full w-full grid place-items-center text-xs text-slate-400">Loading chart…</div>}>
+                <ProblemsChart data={[{ n:'Cam Off', v:selectedSite.offlineCameras||0 },{ n:'ANPR Off', v:selectedSite.offlineANPR||0 },{ n:'ACS', v:selectedSite.notWorkingANPR||0 },{ n:'Gate', v:selectedSite.notWorkingGate||0 },{ n:'Intercom', v:selectedSite.notWorkingIntercom||0 }]} />
+              </Suspense>
             </div>
           </div>
         </div>
@@ -701,31 +698,17 @@ export default function App(){
                   <div className="border rounded-xl p-3" style={{ borderColor:'#e2e8f0' }}>
                     <div className="text-xs font-bold tracking-widest uppercase text-slate-500 mb-2">Daily (last 30 days)</div>
                     <div className="h-[120px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={[...aiPeriods.days.buckets].reverse()}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="label" tick={{ fontSize:9 }} interval={4} />
-                          <YAxis tick={{ fontSize:9 }} />
-                          <Tooltip />
-                          <Bar isAnimationActive={false} dataKey="sites" fill="#8b5cf6" radius={[2,2,0,0]} name="Sites" />
-                          <Bar isAnimationActive={false} dataKey="incidents" fill="#f59e0b" radius={[2,2,0,0]} name="Incidents" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <Suspense fallback={<div className="h-full w-full grid place-items-center text-xs text-slate-400">Loading chart…</div>}>
+                        <DailyChart data={[...aiPeriods.days.buckets].reverse()} />
+                      </Suspense>
                     </div>
                   </div>
                   <div className="border rounded-xl p-3" style={{ borderColor:'#e2e8f0' }}>
                     <div className="text-xs font-bold tracking-widest uppercase text-slate-500 mb-2">Monthly (last 12 months)</div>
                     <div className="h-[120px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={[...aiPeriods.months.buckets].reverse()}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="label" tick={{ fontSize:9 }} />
-                          <YAxis tick={{ fontSize:9 }} />
-                          <Tooltip />
-                          <Bar isAnimationActive={false} dataKey="sites" fill="#0ea5e9" radius={[2,2,0,0]} name="Sites" />
-                          <Bar isAnimationActive={false} dataKey="accidents" fill="#ef4444" radius={[2,2,0,0]} name="Accidents" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      <Suspense fallback={<div className="h-full w-full grid place-items-center text-xs text-slate-400">Loading chart…</div>}>
+                        <MonthlyChart data={[...aiPeriods.months.buckets].reverse()} />
+                      </Suspense>
                     </div>
                   </div>
                 </div>
