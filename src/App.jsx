@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, MapPin, User, Building2, ClipboardCheck, Pencil, Save, X, Video, Camera, ScanSearch, WifiOff, AlertTriangle, FileText, ShieldCheck, HardHat, Home, Factory, ArrowLeft, Phone, Mail, Briefcase, Calendar, CheckCircle2, Plus, Trash2, Edit3 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
@@ -35,7 +35,7 @@ function generate80Sites(){
     const day = String(10 + (i % 18)).padStart(2,'0')
     items.push({
       id: genDeterministicId(i),
-      name: `Site ${String(i).padStart(2,'0')} — ${area} ${block}`,
+      name: `Site ${String(i).padStart(2,'0')} â€” ${area} ${block}`,
       location: `${area}, ${block}`,
       type, status,
       date: `2026-09-${day}`,
@@ -67,7 +67,7 @@ export default function App(){
       const saved = localStorage.getItem('site-inspection-sites')
       if(saved){ const p2=JSON.parse(saved); if(Array.isArray(p2) && p2.length>0) return p2 }
     }catch{}
-    // Chrome file:// has no shared localStorage with main dashboard — generate same 80 deterministically
+    // Chrome file:// has no shared localStorage with main dashboard â€” generate same 80 deterministically
     return OWNER_SEED
   })
   const [incidents, setIncidents] = useState(()=>{
@@ -132,7 +132,7 @@ export default function App(){
       const s = sites.find(x=>x.id===selectedId)
       if(s){
         setOwnerForm({
-          ownerName: s.inspector || '—',
+          ownerName: s.inspector || 'â€”',
           company: s.location.split(',')[0] || 'Owner',
           phone: `+971 50 ${String(100+Math.floor(Math.random()*800))} ${String(1000+Math.floor(Math.random()*9000))}`,
           email: `${(s.inspector||'owner').toLowerCase().replace(/[^a-z]/g,'')}.${s.name.split(' ')[1]?.toLowerCase()||'site'}@example.com`,
@@ -245,6 +245,16 @@ export default function App(){
   const selectedSite = useMemo(()=> sites.find(s=>s.id===selectedId) || sites[0], [sites, selectedId])
   const siteIncidents = useMemo(()=> incidents.filter(i=> i.siteId===selectedId), [incidents, selectedId])
   const siteAccidents = useMemo(()=> accidents.filter(a=> a.siteId===selectedId), [accidents, selectedId])
+  const aiPeriods = useMemo(()=> summarizeByPeriod(sites, incidents, accidents), [sites, incidents, accidents])
+  const camerasPieData = useMemo(()=>[
+    { name:'Online', value: Math.max(0,(selectedSite?.totalCameras||0)-(selectedSite?.offlineCameras||0)) },
+    { name:'Offline', value: selectedSite?.offlineCameras||0 }
+  ].filter(d=>d.value>0), [selectedSite])
+  const anprPieData = useMemo(()=>[
+    { name:'Online', value: Math.max(0,(selectedSite?.totalANPR||0)-(selectedSite?.offlineANPR||0)-(selectedSite?.notWorkingANPR||0)) },
+    { name:'Offline', value: selectedSite?.offlineANPR||0 },
+    { name:'Not Working', value: selectedSite?.notWorkingANPR||0 }
+  ].filter(d=>d.value>0), [selectedSite])
 
   const filteredSites = useMemo(()=>{
     const q=query.toLowerCase()
@@ -262,7 +272,7 @@ export default function App(){
     if(field==='notWorkingANPR') updateSiteField('notWorkingANPR', 0)
     if(field==='notWorkingGate') updateSiteField('notWorkingGate', 0)
     if(field==='notWorkingIntercom') updateSiteField('notWorkingIntercom', 0)
-    toast.success(`${field} → now 0 (online)`)
+    toast.success(`${field} â†’ now 0 (online)`)
   }
   const saveOwner = ()=>{
     if(selectedSite){
@@ -283,7 +293,7 @@ export default function App(){
   }
   const updateAccidentStatus = (id, status)=>{
     setAccidents(prev=> prev.map(a=> a.id===id ? { ...a, status } : a))
-    toast.success(`Accident → ${status}`)
+    toast.success(`Accident â†’ ${status}`)
   }
   const openSiteEdit = ()=>{
     if(!selectedSite) return
@@ -294,7 +304,7 @@ export default function App(){
     e.preventDefault()
     if(!siteEditForm.name?.trim() || !siteEditForm.location?.trim()){ toast.error('Name and location required'); return }
     setSites(prev=> prev.map(s=> s.id===selectedId ? { ...s, ...siteEditForm } : s))
-    toast.success('Site updated — auto-synced to Main Dashboard')
+    toast.success('Site updated â€” auto-synced to Main Dashboard')
     setShowSiteEdit(false)
   }
   const aiUpdateMain = ()=>{
@@ -303,9 +313,9 @@ export default function App(){
     const offline = (selectedSite.offlineCameras||0) + (selectedSite.offlineANPR||0) + (selectedSite.notWorkingANPR||0) + (selectedSite.notWorkingGate||0) + (selectedSite.notWorkingIntercom||0)
     const health = total ? Math.max(0, 100 - Math.round((offline/total)*100)) : 100
     const newStatus = offline===0 ? 'Completed' : offline>5 ? 'Issue Found' : 'In Progress'
-    const aiNote = `AI auto-update ${new Date().toLocaleString()}: Health ${health}% — ${offline} offline/not working — ${siteIncidents.length} incidents, ${siteAccidents.length} accidents — synced to Main Dashboard`
+    const aiNote = `AI auto-update ${new Date().toLocaleString()}: Health ${health}% â€” ${offline} offline/not working â€” ${siteIncidents.length} incidents, ${siteAccidents.length} accidents â€” synced to Main Dashboard`
     setSites(prev=> prev.map(s=> s.id===selectedId ? { ...s, status: newStatus, notes: aiNote } : s))
-    toast.success(`AI updated Main Dashboard — ${selectedSite.name}: ${health}% health, status → ${newStatus}`)
+    toast.success(`AI updated Main Dashboard â€” ${selectedSite.name}: ${health}% health, status â†’ ${newStatus}`)
   }
 
   const handleLogin = ()=>{
@@ -317,7 +327,7 @@ export default function App(){
     const valid = loginPin === expected || loginPin === fallback || loginPin === '1234'
     const urlPin = new URLSearchParams(window.location.search).get('pin')
     const ok = valid || (urlPin && loginPin === urlPin)
-    if(!ok){ toast.error(`Wrong pincode for ${site?.name || 'site'}. Check main dashboard → Pincode Access.`); return }
+    if(!ok){ toast.error(`Wrong pincode for ${site?.name || 'site'}. Check main dashboard â†’ Pincode Access.`); return }
     const nameToStore = loginName.trim() || site?.inspector || 'Owner'
     localStorage.setItem('dhre-owner-session', loginSiteId)
     localStorage.setItem('dhre-owner-name', nameToStore)
@@ -328,7 +338,7 @@ export default function App(){
     }
     setSelectedId(loginSiteId)
     setIsLoggedIn(true)
-    toast.success(`Welcome — ${site?.name}`)
+    toast.success(`Welcome â€” ${site?.name}`)
   }
   const handleLogout = ()=>{
     localStorage.removeItem('dhre-owner-session')
@@ -343,7 +353,7 @@ export default function App(){
       let targetId = selectedId
       let s = sites.find(x=>x.id===targetId)
       const urlPin = new URLSearchParams(window.location.search).get('pin')
-      // Chrome file:// IDs are random vs deterministic — fallback to pin
+      // Chrome file:// IDs are random vs deterministic â€” fallback to pin
       if(!s && urlPin){
         s = sites.find(x=>x.pincode===urlPin)
         if(s) targetId = s.id
@@ -373,9 +383,9 @@ export default function App(){
     }
   }, [sites])
 
-  if(!selectedSite) return <div className="p-8 text-center">Loading 80 sites from main dashboard — open <a href="https://dhre-ng62.vercel.app" className="underline">DHRE Security Dashboard</a> first.</div>
+  if(!selectedSite) return <div className="p-8 text-center">Loading 80 sites from main dashboard â€” open <a href="https://dhre-ng62.vercel.app" className="underline">DHRE Security Dashboard</a> first.</div>
 
-  // Login screen — 80 different pages, one per site
+  // Login screen â€” 80 different pages, one per site
   if(!isLoggedIn){
     return (
       <div className="min-h-screen bg-[#f8fafc] flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -383,7 +393,7 @@ export default function App(){
         <header className="bg-gradient-to-r from-slate-900 via-slate-900 to-sky-900 border-b" style={{ borderColor:'#0f172a' }}>
           <div className="max-w-[480px] mx-auto px-4 h-[56px] flex items-center gap-3">
             <div className="h-10 px-2 rounded-xl bg-white grid place-items-center"><img src="./dhre-logo.svg" alt="DHRE" className="h-8 w-auto object-contain" onError={(e)=> e.currentTarget.src='./dhre-logo.jpg'} /></div>
-            <div className="font-extrabold text-white leading-none">DHRE — Owner Login</div>
+            <div className="font-extrabold text-white leading-none">DHRE â€” Owner Login</div>
           </div>
         </header>
         <div className="flex-1 grid place-items-center p-4">
@@ -391,16 +401,16 @@ export default function App(){
             <div className="text-center">
               <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white grid place-items-center mx-auto"><User size={20} /></div>
               <h1 className="mt-3 text-xl font-extrabold">Each site has its own page</h1>
-              <p className="text-sm text-slate-500 mt-1">80 different dashboards — login to see <b>only your site</b> in one dashboard</p>
+              <p className="text-sm text-slate-500 mt-1">80 different dashboards â€” login to see <b>only your site</b> in one dashboard</p>
             </div>
             <div className="mt-6 space-y-3">
               <div>
                 <label className="text-xs font-bold tracking-widest uppercase text-slate-500">Select your site *</label>
                 <select value={loginSiteId} onChange={e=>{ setLoginSiteId(e.target.value); const s=sites.find(x=>x.id===e.target.value); if(s) setLoginName(s.inspector) }} className="mt-1.5 w-full px-4 py-3 rounded-xl border bg-slate-50 font-medium" style={{ borderColor:'#e2e8f0' }}>
-                  <option value="">— Choose one of 80 sites —</option>
-                  {sites.map(s=> <option key={s.id} value={s.id}>{s.name} — {s.location}</option>)}
+                  <option value="">â€” Choose one of 80 sites â€”</option>
+                  {sites.map(s=> <option key={s.id} value={s.id}>{s.name} â€” {s.location}</option>)}
                 </select>
-                <div className="text-[11px] text-slate-500 mt-1">{sites.length} sites • each page is different (cameras, ANPR, incidents, accidents)</div>
+                <div className="text-[11px] text-slate-500 mt-1">{sites.length} sites â€¢ each page is different (cameras, ANPR, incidents, accidents)</div>
               </div>
               <div>
                 <label className="text-xs font-bold tracking-widest uppercase text-slate-500">Owner name</label>
@@ -409,10 +419,10 @@ export default function App(){
               <div>
                 <label className="text-xs font-bold tracking-widest uppercase text-slate-500">Pincode *</label>
                 <input value={loginPin} onChange={e=>setLoginPin(e.target.value.replace(/\D/g,'').slice(0,6))} placeholder="4-digit code from main dashboard" className="mt-1.5 w-full px-4 py-3 rounded-xl border bg-amber-50 font-mono text-lg tracking-widest text-center font-bold" style={{ borderColor: loginPin ? '#fde68a' : '#e2e8f0', background: loginPin ? '#fffbeb' : '#f8fafc' }} />
-                <div className="text-[11px] text-slate-500 mt-1">Get code from main website → <b>Sites → Pincode Access</b> for your site. Try <b>demo: 1234</b> works for any site.</div>
+                <div className="text-[11px] text-slate-500 mt-1">Get code from main website â†’ <b>Sites â†’ Pincode Access</b> for your site. Try <b>demo: 1234</b> works for any site.</div>
               </div>
-              <button onClick={handleLogin} className="w-full py-3 rounded-full bg-slate-900 text-white font-bold hover:bg-black">Login with Pincode → My Site Dashboard</button>
-              <div className="text-xs text-center text-slate-500">Pincode is per-site • <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to main dashboard</a></div>
+              <button onClick={handleLogin} className="w-full py-3 rounded-full bg-slate-900 text-white font-bold hover:bg-black">Login with Pincode â†’ My Site Dashboard</button>
+              <div className="text-xs text-center text-slate-500">Pincode is per-site â€¢ <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to main dashboard</a></div>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-slate-50 border p-2" style={{ borderColor:'#eef2f7' }}><div className="text-[11px] font-bold uppercase text-slate-500">Sites</div><div className="font-extrabold">80</div></div>
@@ -435,14 +445,14 @@ export default function App(){
             <a href="https://dhre-ng62.vercel.app" className="flex items-center gap-3">
               <div className="h-11 px-3 rounded-xl bg-white grid place-items-center overflow-hidden shrink-0 shadow-lg"><img src="./dhre-logo.svg" alt="DHRE" className="h-9 w-auto object-contain" onError={(e)=>{ e.currentTarget.src='./dhre-logo.jpg' }} /></div>
               <div>
-                <div className="font-extrabold tracking-tight leading-none text-[18px] text-white">DHRE — Owner Portal</div>
-                <div className="text-xs text-sky-200 -mt-0.5">Linked to Security Dashboard • {selectedSite.name}</div>
+                <div className="font-extrabold tracking-tight leading-none text-[18px] text-white">DHRE â€” Owner Portal</div>
+                <div className="text-xs text-sky-200 -mt-0.5">Linked to Security Dashboard â€¢ {selectedSite.name}</div>
               </div>
             </a>
             <div className="flex items-center gap-2">
-              <button onClick={()=>{ setShowAI(v=>!v); if(!showAI){ const s = summarizeByPeriod(sites, incidents, accidents); setAiSummary(generateNarrative(sites, incidents, accidents)); } }} className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-violet-600 text-white text-xs font-bold hover:bg-violet-700"><ScanSearch size={14} /> AI Summary</button>
-              <button onClick={()=>setLiveOn(v=>!v)} className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${liveOn?'bg-emerald-500 text-white border-emerald-400 animate-pulse':'bg-white/15 text-white border-white/20'}`}>{liveOn?`LIVE • ${lastSync}`:'PAUSED'}</button>
-              <span className="hidden sm:inline text-xs text-sky-200 max-w-[160px] truncate">{localStorage.getItem('dhre-owner-name') || ownerForm.ownerName} • {selectedSite.name}</span>
+              <button onClick={()=>{ setShowAI(v=>!v); if(!showAI){ const s = aiPeriods; setAiSummary(generateNarrative(sites, incidents, accidents)); } }} className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-violet-600 text-white text-xs font-bold hover:bg-violet-700"><ScanSearch size={14} /> AI Summary</button>
+              <button onClick={()=>setLiveOn(v=>!v)} className={`hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${liveOn?'bg-emerald-500 text-white border-emerald-400 animate-pulse':'bg-white/15 text-white border-white/20'}`}>{liveOn?`LIVE â€¢ ${lastSync}`:'PAUSED'}</button>
+              <span className="hidden sm:inline text-xs text-sky-200 max-w-[160px] truncate">{localStorage.getItem('dhre-owner-name') || ownerForm.ownerName} â€¢ {selectedSite.name}</span>
               <button onClick={handleLogout} className="px-3 py-1.5 rounded-full bg-white/15 text-white border border-white/20 text-xs font-bold hover:bg-white/20">Logout</button>
               <a href="https://dhre-ng62.vercel.app" className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow"><ArrowLeft size={14} /> Dashboard</a>
             </div>
@@ -451,7 +461,7 @@ export default function App(){
         <div className="bg-white border-t" style={{ borderColor:'#eef2f7' }}>
           <div className="max-w-[1280px] mx-auto px-4 lg:px-6 h-[44px] flex items-center justify-center">
             <div className="text-xs font-bold tracking-widest uppercase text-slate-500 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" /> My Site Dashboard — <span className="text-slate-900 normal-case tracking-normal font-extrabold">{selectedSite.name}</span> <span className="hidden sm:inline font-normal normal-case">• All things for this site in one place • No other sites visible</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" /> My Site Dashboard â€” <span className="text-slate-900 normal-case tracking-normal font-extrabold">{selectedSite.name}</span> <span className="hidden sm:inline font-normal normal-case">â€¢ All things for this site in one place â€¢ No other sites visible</span>
             </div>
           </div>
         </div>
@@ -471,7 +481,7 @@ export default function App(){
                 <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white grid place-items-center font-extrabold text-lg">{ownerForm.ownerName?.[0]||'O'}</div>
                 <div className="flex-1 min-w-0">
                   {editMode ? <input value={ownerForm.ownerName} onChange={e=>setOwnerForm({...ownerForm, ownerName:e.target.value})} className="w-full px-3 py-2 rounded-xl border bg-slate-50 font-bold" style={{ borderColor:'#e2e8f0' }} /> : <div className="font-extrabold leading-none">{ownerForm.ownerName}</div>}
-                  <div className="text-xs text-slate-500 flex items-center gap-1 mt-1"><Briefcase size={11} />{editMode ? <input value={ownerForm.role} onChange={e=>setOwnerForm({...ownerForm, role:e.target.value})} className="px-2 py-1 rounded-lg border text-xs flex-1" style={{ borderColor:'#e2e8f0' }} /> : ownerForm.role} • {selectedSite.type}</div>
+                  <div className="text-xs text-slate-500 flex items-center gap-1 mt-1"><Briefcase size={11} />{editMode ? <input value={ownerForm.role} onChange={e=>setOwnerForm({...ownerForm, role:e.target.value})} className="px-2 py-1 rounded-lg border text-xs flex-1" style={{ borderColor:'#e2e8f0' }} /> : ownerForm.role} â€¢ {selectedSite.type}</div>
                 </div>
               </div>
               <div className="space-y-2 text-sm">
@@ -482,7 +492,7 @@ export default function App(){
                 <div className="flex items-center gap-2"><Calendar size={14} className="text-slate-400" />Since {ownerForm.since}</div>
                 <div>
                   <div className="text-xs font-bold tracking-widest uppercase text-slate-500 mt-2">Notes</div>
-                  {editMode ? <textarea value={ownerForm.notes} onChange={e=>setOwnerForm({...ownerForm, notes:e.target.value})} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} /> : <p className="mt-1 text-sm bg-slate-50 rounded-xl p-3 border" style={{ borderColor:'#eef2f7' }}>{ownerForm.notes || '—'}</p>}
+                  {editMode ? <textarea value={ownerForm.notes} onChange={e=>setOwnerForm({...ownerForm, notes:e.target.value})} rows={3} className="mt-1 w-full px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} /> : <p className="mt-1 text-sm bg-slate-50 rounded-xl p-3 border" style={{ borderColor:'#eef2f7' }}>{ownerForm.notes || 'â€”'}</p>}
                 </div>
               </div>
             </div>
@@ -532,23 +542,24 @@ export default function App(){
               <div className="bg-white rounded-xl border p-3" style={{ borderColor: (selectedSite.notWorkingGate||0)>0 ? '#bae6fd' : '#e2e8f0' }}>
                 <div className="text-[11px] font-bold tracking-widest uppercase text-sky-700">Gate Barrier</div>
                 <div className="mt-1 text-2xl font-extrabold">{selectedSite.notWorkingGate||0} <span className="text-xs font-normal text-slate-500">fail</span></div>
+                <button onClick={()=>{ const v=prompt('Gate barrier failures', String(selectedSite.notWorkingGate||0)); if(v!==null) updateSiteField('notWorkingGate', Math.max(0, parseInt(v)||0)) }} className="mt-1 text-xs underline font-bold">Edit count</button>
                 <button onClick={()=>makeOnline('notWorkingGate')} className="mt-2 w-full py-1 rounded-full bg-sky-600 text-white text-xs font-bold">Make online</button>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Intercom</div><div className="text-xl font-extrabold">{selectedSite.notWorkingIntercom||0} <span className="text-xs text-slate-500">fail</span></div><button onClick={()=>makeOnline('notWorkingIntercom')} className="mt-1 text-xs underline font-bold">Make online</button></div>
+              <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Intercom</div><div className="text-xl font-extrabold">{selectedSite.notWorkingIntercom||0} <span className="text-xs text-slate-500">fail</span></div><button onClick={()=>{ const v=prompt('Intercom failures', String(selectedSite.notWorkingIntercom||0)); if(v!==null) updateSiteField('notWorkingIntercom', Math.max(0, parseInt(v)||0)) }} className="mt-1 text-xs underline font-bold">Edit count</button><button onClick={()=>makeOnline('notWorkingIntercom')} className="mt-1 text-xs underline font-bold">Make online</button></div>
               <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Incidents</div><div className="text-xl font-extrabold">{siteIncidents.length}</div><div className="text-xs text-slate-500">{siteIncidents.filter(i=>i.status==='Open').length} open</div></div>
               <div className="bg-white rounded-xl border p-3 text-center" style={{ borderColor:'#e2e8f0' }}><div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Accidents</div><div className="text-xl font-extrabold">{siteAccidents.length}</div><div className="text-xs text-slate-500">{siteAccidents.filter(a=>a.status==='Open').length} open</div></div>
             </div>
             {/* Charts for my site */}
             <div className="grid lg:grid-cols-2 gap-3">
               <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-                <div className="text-xs font-bold tracking-widest uppercase text-slate-500">Cameras — My Site</div>
+                <div className="text-xs font-bold tracking-widest uppercase text-slate-500">Cameras â€” My Site</div>
                 <div className="h-[160px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={[{ name:'Online', value: Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0)) }, { name:'Offline', value: selectedSite.offlineCameras||0 }].filter(d=>d.value>0)} cx="50%" cy="50%" innerRadius={36} outerRadius={56} dataKey="value">
+                      <Pie data={camerasPieData} cx="50%" cy="50%" innerRadius={36} outerRadius={56} dataKey="value" isAnimationActive={false}>
                         <Cell fill="#10b981" /><Cell fill="#ef4444" />
                       </Pie>
                       <Tooltip />
@@ -558,11 +569,11 @@ export default function App(){
                 <div className="flex justify-center gap-3 text-xs"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Online {Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))}</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />Offline {selectedSite.offlineCameras||0}</span></div>
               </div>
               <div className="bg-white rounded-xl border p-3" style={{ borderColor:'#e2e8f0' }}>
-                <div className="text-xs font-bold tracking-widest uppercase text-slate-500">ANPR — My Site</div>
+                <div className="text-xs font-bold tracking-widest uppercase text-slate-500">ANPR â€” My Site</div>
                 <div className="h-[160px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={[{ name:'Online', value: Math.max(0,(selectedSite.totalANPR||0)-(selectedSite.offlineANPR||0)-(selectedSite.notWorkingANPR||0)) }, { name:'Offline', value: selectedSite.offlineANPR||0 }, { name:'Not Working', value: selectedSite.notWorkingANPR||0 }].filter(d=>d.value>0)} cx="50%" cy="50%" innerRadius={36} outerRadius={56} dataKey="value">
+                      <Pie data={anprPieData} cx="50%" cy="50%" innerRadius={36} outerRadius={56} dataKey="value" isAnimationActive={false}>
                         <Cell fill="#10b981" /><Cell fill="#f59e0b" /><Cell fill="#7c3aed" />
                       </Pie>
                       <Tooltip />
@@ -578,20 +589,20 @@ export default function App(){
         <div className="mt-6 grid lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
             <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
-              <div className="font-bold text-sm flex items-center gap-2"><FileText size={14} /> Incidents — {selectedSite.name}</div>
+              <div className="font-bold text-sm flex items-center gap-2"><FileText size={14} /> Incidents â€” {selectedSite.name}</div>
               <span className="text-xs px-2 py-1 rounded-full bg-slate-100 border" style={{ borderColor:'#e2e8f0' }}>{siteIncidents.length}</span>
             </div>
             <div className="p-3 space-y-2 max-h-[420px] overflow-auto">
               {siteIncidents.length===0 ? <div className="text-sm text-slate-500 text-center py-8">No incidents for this site.</div> : siteIncidents.map(inc=>(
                 <div key={inc.id} className="border rounded-xl p-3 bg-slate-50" style={{ borderColor:'#eef2f7' }}>
-                  <div className="font-bold text-sm">{inc.title}</div>
+                  <div className="font-bold text-sm flex items-center justify-between">{inc.title}<button onClick={()=>{ setIncidents(prev=>prev.filter(x=>x.id!==inc.id)); toast.success('Incident deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
                   <div className="text-xs text-slate-600 mt-1">{inc.description}</div>
                   <div className="mt-2 flex gap-1">
                     {['Open','In Review','Resolved','Closed'].map(s=>(
                       <button key={s} onClick={()=>{
                         const upd = incidents.map(x=> x.id===inc.id ? { ...x, status: s } : x)
                         setIncidents(upd)
-                        toast.success(`Incident → ${s}`)
+                        toast.success(`Incident â†’ ${s}`)
                       }} className={`px-2 py-1 rounded-full border text-xs font-bold ${inc.status===s?'bg-slate-900 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
                     ))}
                   </div>
@@ -602,7 +613,7 @@ export default function App(){
 
           <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor:'#e2e8f0' }}>
             <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor:'#eef2f7' }}>
-              <div className="font-bold text-sm flex items-center gap-2"><AlertTriangle size={14} /> Accidents — {selectedSite.name}</div>
+              <div className="font-bold text-sm flex items-center gap-2"><AlertTriangle size={14} /> Accidents â€” {selectedSite.name}</div>
               <button onClick={()=>setShowAccident(true)} className="px-3 py-1 rounded-full bg-red-600 text-white text-xs font-bold flex items-center gap-1"><Plus size={12} /> Add</button>
             </div>
             <div className="p-3 space-y-2 max-h-[420px] overflow-auto">
@@ -610,10 +621,10 @@ export default function App(){
                 <div key={acc.id} className="border rounded-xl p-3 bg-red-50/50" style={{ borderColor:'#fecaca' }}>
                   <div className="font-bold text-sm flex items-center justify-between">{acc.title}<button onClick={()=>{ setAccidents(prev=> prev.filter(x=>x.id!==acc.id)); toast.success('Deleted') }} className="p-1 hover:text-red-600"><Trash2 size={14} /></button></div>
                   <div className="text-xs text-slate-600 mt-1">{acc.description}</div>
-                  <div className="text-xs text-slate-500 mt-1">{acc.date} • {acc.reportedBy} • {acc.severity}</div>
+                  <div className="text-xs text-slate-500 mt-1">{acc.date} â€¢ {acc.reportedBy} â€¢ {acc.severity}</div>
                   <div className="mt-2 flex gap-1">
                     {['Open','In Review','Resolved','Closed'].map(s=>(
-                      <button key={s} onClick={()=>{ setAccidents(prev=> prev.map(x=> x.id===acc.id ? { ...x, status: s } : x)); toast.success(`Accident → ${s}`) }} className={`px-2 py-1 rounded-full border text-xs font-bold ${acc.status===s?'bg-red-600 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
+                      <button key={s} onClick={()=>{ setAccidents(prev=> prev.map(x=> x.id===acc.id ? { ...x, status: s } : x)); toast.success(`Accident â†’ ${s}`) }} className={`px-2 py-1 rounded-full border text-xs font-bold ${acc.status===s?'bg-red-600 text-white':'bg-white'}`} style={{ borderColor:'#e2e8f0' }}>{s}</button>
                     ))}
                   </div>
                 </div>
@@ -622,17 +633,17 @@ export default function App(){
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">Owner Portal • Linked to main dashboard • Edits update main dashboard live (shared localStorage) • <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to DHRE Security Dashboard</a></p>
+        <p className="mt-6 text-center text-xs text-slate-400">Owner Portal â€¢ Linked to main dashboard â€¢ Edits update main dashboard live (shared localStorage) â€¢ <a href="https://dhre-ng62.vercel.app" className="underline font-bold">Back to DHRE Security Dashboard</a></p>
       </main>
 
-      {/* Edit Site — fully updateable, syncs to main */}
+      {/* Edit Site â€” fully updateable, syncs to main */}
       <AnimatePresence>
         {showSiteEdit && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="fixed inset-0 z-40 grid place-items-center p-4">
             <div onClick={()=>setShowSiteEdit(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
             <motion.form onSubmit={saveSiteEdit} initial={{ scale:0.96, y:8 }} animate={{ scale:1, y:0 }} exit={{ scale:0.96, y:8 }} className="relative w-full max-w-[640px] bg-white rounded-[24px] shadow-2xl border overflow-hidden max-h-[90vh] flex flex-col" style={{ borderColor:'#e2e8f0' }}>
               <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor:'#e2e8f0' }}>
-                <div className="font-bold">Edit Site — {siteEditForm.name}</div>
+                <div className="font-bold">Edit Site â€” {siteEditForm.name}</div>
                 <button type="button" onClick={()=>setShowSiteEdit(false)} className="w-8 h-8 grid place-items-center rounded-full hover:bg-slate-100"><X size={18} /></button>
               </div>
               <div className="p-6 space-y-3 overflow-auto">
@@ -660,7 +671,7 @@ export default function App(){
               </div>
               <div className="p-4 border-t bg-slate-50 flex gap-2 justify-end" style={{ borderColor:'#e2e8f0' }}>
                 <button type="button" onClick={()=>setShowSiteEdit(false)} className="px-4 py-2 rounded-full border bg-white font-bold" style={{ borderColor:'#e2e8f0' }}>Cancel</button>
-                <button type="submit" className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold">Save — Auto-sync to Main</button>
+                <button type="submit" className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold">Save â€” Auto-sync to Main</button>
               </div>
             </motion.form>
           </motion.div>
@@ -681,7 +692,7 @@ export default function App(){
                 <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-sm whitespace-pre-line font-mono">{aiSummary || 'Generating...'}</div>
                 <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {(()=>{
-                    const s = summarizeByPeriod(sites, incidents, accidents)
+                    const s = aiPeriods
                     return [
                       { label:'Today', data:s.days.buckets[0], color:'text-emerald-600' },
                       { label:'This Week', data:s.weeks.buckets[0], color:'text-sky-600' },
@@ -706,13 +717,13 @@ export default function App(){
                     <div className="text-xs font-bold tracking-widest uppercase text-slate-500 mb-2">Daily (last 30 days)</div>
                     <div className="h-[120px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={[...summarizeByPeriod(sites, incidents, accidents).days.buckets].reverse()}>
+                        <BarChart data={[...aiPeriods.days.buckets].reverse()}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
                           <XAxis dataKey="label" tick={{ fontSize:9 }} interval={4} />
                           <YAxis tick={{ fontSize:9 }} />
                           <Tooltip />
-                          <Bar dataKey="sites" fill="#8b5cf6" radius={[2,2,0,0]} name="Sites" />
-                          <Bar dataKey="incidents" fill="#f59e0b" radius={[2,2,0,0]} name="Incidents" />
+                          <Bar isAnimationActive={false} dataKey="sites" fill="#8b5cf6" radius={[2,2,0,0]} name="Sites" />
+                          <Bar isAnimationActive={false} dataKey="incidents" fill="#f59e0b" radius={[2,2,0,0]} name="Incidents" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -721,13 +732,13 @@ export default function App(){
                     <div className="text-xs font-bold tracking-widest uppercase text-slate-500 mb-2">Monthly (last 12 months)</div>
                     <div className="h-[120px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={[...summarizeByPeriod(sites, incidents, accidents).months.buckets].reverse()}>
+                        <BarChart data={[...aiPeriods.months.buckets].reverse()}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
                           <XAxis dataKey="label" tick={{ fontSize:9 }} />
                           <YAxis tick={{ fontSize:9 }} />
                           <Tooltip />
-                          <Bar dataKey="sites" fill="#0ea5e9" radius={[2,2,0,0]} name="Sites" />
-                          <Bar dataKey="accidents" fill="#ef4444" radius={[2,2,0,0]} name="Accidents" />
+                          <Bar isAnimationActive={false} dataKey="sites" fill="#0ea5e9" radius={[2,2,0,0]} name="Sites" />
+                          <Bar isAnimationActive={false} dataKey="accidents" fill="#ef4444" radius={[2,2,0,0]} name="Accidents" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -745,7 +756,7 @@ export default function App(){
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="fixed inset-0 z-40 grid place-items-center p-4">
             <div onClick={()=>setShowAccident(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
             <motion.form onSubmit={handleAccidentAdd} initial={{ scale:0.96, y:8 }} animate={{ scale:1, y:0 }} exit={{ scale:0.96, y:8 }} className="relative w-full max-w-[520px] bg-white rounded-[24px] shadow-2xl border p-6 space-y-3" style={{ borderColor:'#e2e8f0' }}>
-              <div className="font-bold">Report Accident — {selectedSite.name}</div>
+              <div className="font-bold">Report Accident â€” {selectedSite.name}</div>
               <input value={accForm.title} onChange={e=>setAccForm({...accForm, title:e.target.value})} placeholder="Title" className="w-full px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} />
               <textarea value={accForm.description} onChange={e=>setAccForm({...accForm, description:e.target.value})} rows={3} placeholder="Description" className="w-full px-3 py-2 rounded-xl border bg-slate-50" style={{ borderColor:'#e2e8f0' }} />
               <div className="grid grid-cols-2 gap-2">
@@ -767,3 +778,5 @@ export default function App(){
     </div>
   )
 }
+
+
