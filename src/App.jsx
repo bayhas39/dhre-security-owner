@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, MapPin, User, Building2, ClipboardCheck, Pencil, Save, X, Video, Camera, ScanSearch, WifiOff, AlertTriangle, FileText, ShieldCheck, HardHat, Home, Factory, ArrowLeft, Phone, Mail, Briefcase, Calendar, CheckCircle2, Plus, Trash2, Edit3, Copy, Key as KeyIcon } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { KEYS, publish, subscribe, readKey, ensureLegacyMirror } from './sync.js'
-import { SUPABASE_ENABLED, publishBoth, pullAll, subscribeRemote, primeRemote } from './remote.js'
+import { SUPABASE_ENABLED, publishBoth, pullAll, subscribeRemote, primeRemote } from './remote-vercel.js'
 import { autoUpdateAll, summarizeByPeriod, generateNarrative, computeHealth } from './ai-engine.js'
 
 import { ProblemsChart, DailyChart, MonthlyChart } from './FastCharts.jsx'
