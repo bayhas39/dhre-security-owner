@@ -474,6 +474,7 @@ export default function App(){
             <div className="text-xs font-bold tracking-widest uppercase text-slate-500 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500" /> My Site Dashboard â€” <span className="text-slate-900 normal-case tracking-normal font-extrabold">{selectedSite.name}</span> <span className="hidden sm:inline font-normal normal-case">â€¢ All things for this site in one place â€¢ No other sites visible</span>
             </div>
+            <button onClick={openSiteEdit} className="ml-auto px-3 py-1 rounded-full bg-slate-900 text-white text-[11px] font-bold hover:bg-black">Edit</button>
           </div>
         </div>
       </header>
@@ -491,7 +492,6 @@ export default function App(){
             </div>
           </div>
           <span className="ml-auto hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-100 text-sky-700 text-xs font-bold"><ShieldCheck size={12} /> My Site Website — All things in one dashboard</span>
-          <button onClick={openSiteEdit} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-black shadow"><Pencil size={12} /> Edit</button>
         </div>
 
         {/* Stat cards */}
@@ -500,22 +500,18 @@ export default function App(){
             <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total Cameras</div>
             <div className="mt-1 text-2xl font-extrabold">{selectedSite.totalCameras||0}</div>
             <div className="text-xs text-slate-500">{Math.max(0,(selectedSite.totalCameras||0)-(selectedSite.offlineCameras||0))} online • {selectedSite.offlineCameras||0} offline</div>
-            <button onClick={()=>{ const v=prompt('Total Cameras', String(selectedSite.totalCameras||0)); if(v!==null) updateSiteField('totalCameras', Math.max(0, parseInt(v)||0)) }} className="mt-2 text-xs underline font-bold">Edit</button>
           </div>
           <div className="bg-red-50/40 rounded-2xl border p-4" style={{ borderColor:'#fecaca' }}>
             <div className="text-[11px] font-bold tracking-widest uppercase text-red-600">Offline CCTV</div>
             <div className="mt-1 text-2xl font-extrabold text-red-600">{selectedSite.offlineCameras||0}</div>
-            <button onClick={()=>makeOnline('offlineCameras')} className="mt-2 w-full py-2 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700">Make online</button>
           </div>
           <div className="bg-white rounded-2xl border p-4" style={{ borderColor:'#e2e8f0' }}>
             <div className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Total ANPR</div>
             <div className="mt-1 text-2xl font-extrabold">{selectedSite.totalANPR||0}</div>
-            <button onClick={()=>{ const v=prompt('Total ANPR', String(selectedSite.totalANPR||0)); if(v!==null) updateSiteField('totalANPR', Math.max(0, parseInt(v)||0)) }} className="mt-2 text-xs underline font-bold">Edit</button>
           </div>
           <div className="bg-amber-50/40 rounded-2xl border p-4" style={{ borderColor:'#fde68a' }}>
             <div className="text-[11px] font-bold tracking-widest uppercase text-amber-600">Offline ANPR</div>
             <div className="mt-1 text-2xl font-extrabold text-amber-600">{selectedSite.offlineANPR||0}</div>
-            <button onClick={()=>makeOnline('offlineANPR')} className="mt-2 w-full py-2 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700">Make online</button>
           </div>
         </div>
 
@@ -527,7 +523,6 @@ export default function App(){
               <div key={field} className="mt-3 flex items-center gap-2">
                 <span className="text-sm">{label}</span>
                 <span className="mx-auto text-lg font-extrabold">{selectedSite[field]||0}</span>
-                <button onClick={()=>makeOnline(field)} className="text-xs underline font-bold" style={{ color }}>Fix</button>
               </div>
             ))}
           </div>
@@ -611,8 +606,7 @@ export default function App(){
 
         </div>      </main>
 
-      {/* Floating quick-edit tab */}
-      <button onClick={openSiteEdit} className="fixed bottom-5 right-5 z-30 px-4 py-2.5 rounded-full bg-slate-900 text-white text-xs font-bold shadow-xl flex items-center gap-2 hover:bg-black"><Edit3 size={14} /> Edit Site</button>
+      
 
       {/* Edit Site â€” fully updateable, syncs to main */}
       <AnimatePresence>
