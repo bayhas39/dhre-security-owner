@@ -147,8 +147,29 @@ export default function App(){
 
   // ---- SYNC: publish owner edits to BOTH transports ----
   useEffect(()=>{ if(sites.length){ publishBoth('sites', sites, KEYS.sitesLegacy); ensureLegacyMirror(sites) } }, [sites])
+  // push live edits to the opener (admin/main dashboard) via postMessage
+  useEffect(()=>{
+    try{
+      if(window.opener && !window.opener.closed)
+        window.opener.postMessage({type:'dhre-sites-update',sites},'*')
+    }catch{}
+  }, [sites])
+
   useEffect(()=>{ publishBoth('incidents', incidents) }, [incidents])
+  useEffect(()=>{
+    try{
+      if(window.opener && !window.opener.closed)
+        window.opener.postMessage({type:'dhre-incidents-update',incidents},'*')
+    }catch{}
+  }, [incidents])
+
   useEffect(()=>{ publishBoth('accidents', accidents) }, [accidents])
+  useEffect(()=>{
+    try{
+      if(window.opener && !window.opener.closed)
+        window.opener.postMessage({type:'dhre-accidents-update',accidents},'*')
+    }catch{}
+  }, [accidents])
 
   // ---- SYNC: receive admin edits (other tab, same device) ----
   useEffect(()=> subscribe([KEYS.sites, KEYS.incidents, KEYS.accidents], (key)=>{
